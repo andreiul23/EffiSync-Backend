@@ -1,5 +1,29 @@
+# Dependencies
 node_modules
+
+# Environment
 .env
+.env.local
+.env.*.local
+
+# Build output
 dist
 .next
+
+# Logs
 *.log
+npm-debug.log*
+
+# Prisma
+prisma/*.db
+prisma/migrations/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

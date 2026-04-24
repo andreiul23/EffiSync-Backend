@@ -1,0 +1,9 @@
+{
+  "name": "effisync",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev:backend": "pnpm --filter @effisync/backend dev",
+    "build:backend": "pnpm --filter @effisync/backend build"
+  }
+}

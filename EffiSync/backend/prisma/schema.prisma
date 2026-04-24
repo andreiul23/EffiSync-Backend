@@ -1,0 +1,115 @@
+// ──────────────────────────────────────────────────────────
+// EffiSync — Prisma Schema
+// ──────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── Enums ──────────────────────────────────────────────
+
+enum TaskStatus {
+  PENDING
+  COMPLETED
+  VALIDATED
+}
+
+enum TransactionType {
+  EARNED
+  VETO
+}
+
+// ─── Models ─────────────────────────────────────────────
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  name               String?
+  googleRefreshToken String?
+  pointsBalance      Int      @default(0)
+
+  householdId String?
+  household   Household? @relation(fields: [householdId], references: [id])
+
+  assignedTasks Task[]         @relation("AssignedTo")
+  createdTasks  Task[]         @relation("CreatedBy")
+  availability  Availability[]
+  transactions  Transaction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([householdId])
+  @@index([email])
+}
+
+model Household {
+  id         String @id @default(uuid())
+  name       String
+  inviteCode String @unique
+
+  members User[]
+  tasks   Task[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Task {
+  id          String     @id @default(uuid())
+  title       String
+  description String?
+  difficulty  Int        @default(1) // 1-5
+  status      TaskStatus @default(PENDING)
+
+  assignedToId String?
+  assignedTo   User?   @relation("AssignedTo", fields: [assignedToId], references: [id])
+
+  createdById String
+  createdBy   User   @relation("CreatedBy", fields: [createdById], references: [id])
+
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([householdId])
+  @@index([assignedToId])
+  @@index([status])
+}
+
+model Availability {
+  id        String   @id @default(uuid())
+  startTime DateTime
+  endTime   DateTime
+  isBusy    Boolean  @default(false)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([startTime, endTime])
+}
+
+model Transaction {
+  id     String          @id @default(uuid())
+  type   TransactionType
+  amount Int
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
