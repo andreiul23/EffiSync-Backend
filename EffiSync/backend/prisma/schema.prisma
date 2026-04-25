@@ -16,8 +16,23 @@ datasource db {
 
 enum TaskStatus {
   PENDING
+  IN_PROGRESS
+  AWAITING_REVIEW
   COMPLETED
-  VALIDATED
+  REJECTED
+}
+
+enum TaskCategory {
+  CLEANING
+  SHOPPING
+  ADMINISTRATIVE
+  PERSONAL_GROWTH
+  OTHER
+}
+
+enum TaskType {
+  INDIVIDUAL
+  GROUP
 }
 
 enum TransactionType {
@@ -25,22 +40,42 @@ enum TransactionType {
   VETO
 }
 
+enum GroupType {
+  HOUSEHOLD
+  FRIEND_GROUP
+  WORK_ENVIRONMENT
+}
+
+enum ChatRole {
+  USER
+  AI
+}
+
 // ─── Models ─────────────────────────────────────────────
 
 model User {
-  id            String   @id @default(uuid())
-  email         String   @unique
+  id                 String   @id @default(uuid())
+  email              String   @unique
   name               String?
+  passwordHash       String?
+  githubId           String?
   googleRefreshToken String?
+  phone              String?
+  gender             String?
+  occupation         String?
+  age                Int?
   pointsBalance      Int      @default(0)
 
   householdId String?
   household   Household? @relation(fields: [householdId], references: [id])
 
-  assignedTasks Task[]         @relation("AssignedTo")
-  createdTasks  Task[]         @relation("CreatedBy")
-  availability  Availability[]
-  transactions  Transaction[]
+  assignedTasks      Task[]              @relation("AssignedTo")
+  createdTasks       Task[]              @relation("CreatedBy")
+  validatedTasks     Task[]              @relation("ValidatedBy")
+  pointsTransactions PointsTransaction[]
+  availability       Availability[]
+  transactions       Transaction[]
+  chatMessages       ChatMessage[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -50,9 +85,12 @@ model User {
 }
 
 model Household {
-  id         String @id @default(uuid())
-  name       String
-  inviteCode String @unique
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  imageUrl    String?
+  type        GroupType @default(HOUSEHOLD)
+  inviteCode  String   @unique
 
   members User[]
   tasks   Task[]
@@ -62,11 +100,15 @@ model Household {
 }
 
 model Task {
-  id          String     @id @default(uuid())
+  id          String       @id @default(uuid())
   title       String
   description String?
-  difficulty  Int        @default(1) // 1-5
-  status      TaskStatus @default(PENDING)
+  status      TaskStatus   @default(PENDING)
+  category    TaskCategory @default(OTHER)
+  type        TaskType     @default(INDIVIDUAL)
+  difficulty  Int          @default(1) // 1-5
+  pointsValue Int
+  refusalCount Int         @default(0)
 
   assignedToId String?
   assignedTo   User?   @relation("AssignedTo", fields: [assignedToId], references: [id])
@@ -74,8 +116,13 @@ model Task {
   createdById String
   createdBy   User   @relation("CreatedBy", fields: [createdById], references: [id])
 
+  validatedById String?
+  validatedBy   User?   @relation("ValidatedBy", fields: [validatedById], references: [id])
+
   householdId String
   household   Household @relation(fields: [householdId], references: [id])
+
+  dueDate     DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -92,7 +139,7 @@ model Availability {
   isBusy    Boolean  @default(false)
 
   userId String
-  user   User   @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 
@@ -106,8 +153,31 @@ model Transaction {
   amount Int
 
   userId String
-  user   User   @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model PointsTransaction {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount    Int
+  reason    String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model ChatMessage {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  text      String
+  role      ChatRole
   createdAt DateTime @default(now())
 
   @@index([userId])

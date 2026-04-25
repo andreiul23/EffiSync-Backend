@@ -3,11 +3,13 @@ import { generateText, stepCountIs } from "ai";
 import { z } from "zod";
 import { geminiModel } from "../lib/ai.js";
 import { prisma } from "../lib/prisma.js";
-import { getUserBusySlots } from "../services/calendar.service.js";
+import { getUserBusySlots, getHouseholdAvailability } from "../services/calendar.service.js";
+import { useVeto } from "../services/economy.service.js";
+import { sendTaskAssignedEmail } from "../services/email.service.js";
 
 // ─── System Prompt ──────────────────────────────────────────
 
-const SYSTEM_PROMPT = `You are the **EffiSync Secretary** — an efficient, fair, and proactive household assistant.
+const SYSTEM_PROMPT = `Ești Secretara Personală a utilizatorului. Loialitatea ta primară este față de el, dar în context de grup, ești un coordonator imparțial.
 
 ## Identity
 You are a helpful, organized, and fair-minded AI. You speak in a friendly but professional tone. You back your suggestions with data.
@@ -18,14 +20,16 @@ Help households stay organized and ensure a **fair distribution of work** among 
 ## Logic / Strategy
 If a user asks a question like "Who should clean the kitchen?", you MUST follow these exact steps:
 1. **Get State** — use \`get_household_state\` to see tasks and who has the lowest points.
-2. **Check Availability** — use \`check_calendar_availability\` for the person with the lowest points.
-3. **Determine Assignee** — If the lowest-points person is free, suggest them. If they are busy, suggest the next person in line who is free. You can use \`calculate_fair_assignment\` to help with this.
+2. **Check Availability** — use \`sync_with_household\` or \`check_calendar_availability\`.
+3. **Regula de Aur (Fairness)**: Când distribui un task de grup, alege membrul care este LIBER (conform raportului de sync) și care are cel mai mic pointsBalance în baza de date. Dacă toți sunt ocupați, propune primul interval comun disponibil în viitor.
 4. **Action** — If the user asks to create or assign a task, use \`manage_task\`. Always confirm before making database changes unless the user's intent is explicit.
 5. **Explain** — Explain your reasoning (points + availability) so the household understands why the assignment is fair.
+6. **VETO** — If a user is unhappy with a task assigned to them, remind them they can use their VETO right for 50 points. If they agree, execute the veto tool.
 
 ## Safety Rules
 - If a tool returns an error, explain the issue to the user in plain language.
-- Do not reveal internal implementation details, tool names, or database structure to the user.`;
+- Do not reveal internal implementation details, tool names, or database structure to the user.
+- Asigură-te că nu dezvălui detaliile evenimentelor private ale altor membri, ci doar statusul de 'Ocupat' sau 'Liber'.`;
 
 // ─── Request Validation ─────────────────────────────────────
 
@@ -99,6 +103,73 @@ export async function chatRoutes(app: FastifyInstance) {
         },
       },
 
+      sync_with_household: {
+        description:
+          "Folosește acest tool când userul cere coordonarea casei sau task-uri de grup. Returnează disponibilitatea tuturor membrilor pentru următoarele 24 de ore.",
+        parameters: z.object({
+          _placeholder: z.string().optional(),
+        }),
+        execute: async (): Promise<any> => {
+          if (!householdId) return { error: "User is not part of any household." };
+          
+          const timeMin = new Date();
+          const timeMax = new Date();
+          timeMax.setHours(timeMax.getHours() + 24);
+          
+          return await getHouseholdAvailability(householdId, timeMin, timeMax);
+        },
+      },
+
+      recommend_growth_activity: {
+        description:
+          "Scanează intervalele libere personale și propune task-uri de tip PERSONAL_GROWTH.",
+        parameters: z.object({
+          _placeholder: z.string().optional(),
+        }),
+        execute: async (): Promise<any> => {
+          if (!userId) return { error: "User not found." };
+          
+          const dbUser = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { googleRefreshToken: true }
+          });
+          
+          if (!dbUser || !dbUser.googleRefreshToken) {
+            return { message: "Nu ai calendarul conectat. Ești considerat complet liber. Recomand o sesiune de citit de 30 minute!" };
+          }
+          
+          const busySlots = await getUserBusySlots(userId, dbUser.googleRefreshToken);
+          
+          // Logic for personal growth recommendation
+          if (busySlots.length > 3) {
+            return { message: "Ai o zi destul de aglomerată. O scurtă sesiune de meditație (15m) ar fi de ajutor." };
+          } else {
+            return { message: "Ai o zi relativ liberă. Ce zici de a învăța o abilitate nouă sau de a citi un capitol dintr-o carte (1 oră)?" };
+          }
+        },
+      },
+
+      veto_task: {
+        description:
+          "Call this when the user explicitly asks to use their Veto right to reject a task assigned to them. It costs 50 points.",
+        parameters: z.object({
+          taskId: z.string().uuid().describe("The ID of the task to veto"),
+        }),
+        execute: async ({ taskId }: { taskId: string }): Promise<any> => {
+          try {
+            const task = await prisma.task.findUnique({ where: { id: taskId } });
+            if (!task) return { error: "Task not found." };
+            if (task.assignedToId !== userId) return { error: "You can only veto tasks assigned to you." };
+            if (task.status !== "IN_PROGRESS") return { error: "You can only veto tasks that are currently IN_PROGRESS." };
+            
+            const result = await useVeto(taskId, userId);
+            return { success: true, message: "Veto applied successfully. 50 points deducted.", task: result };
+          } catch (err: unknown) {
+            return { error: err instanceof Error ? err.message : "Unknown error" };
+          }
+        },
+      },
+
       check_calendar_availability: {
         description:
           "Calls the Calendar service to see who is free at a specific time today. Provide the target user's ID.",
@@ -150,13 +221,14 @@ export async function chatRoutes(app: FastifyInstance) {
 
       manage_task: {
         description:
-          "Tool to create, assign, or update tasks in Prisma. Set action to 'create', 'assign', or 'update'.",
+          "Tool to create, assign, or update tasks in Prisma. Set action to 'create', 'assign', or 'update'. Must include difficulty and category when creating a task.",
         parameters: z.object({
           action: z.enum(["create", "assign", "update"]),
           taskId: z.string().uuid().optional().describe("Required for assign/update"),
           title: z.string().optional().describe("Required for create"),
           description: z.string().optional(),
-          difficulty: z.number().int().min(1).max(5).optional(),
+          difficulty: z.number().int().min(1).max(5).optional().describe("Task difficulty from 1 to 5"),
+          category: z.enum(["CLEANING", "SHOPPING", "ADMINISTRATIVE", "PERSONAL_GROWTH", "OTHER"]).optional().describe("Task category"),
           assignToUserId: z.string().uuid().optional().describe("Required for assign"),
         }),
         execute: async ({
@@ -165,6 +237,7 @@ export async function chatRoutes(app: FastifyInstance) {
           title,
           description,
           difficulty,
+          category,
           assignToUserId,
         }: {
           action: "create" | "assign" | "update";
@@ -172,39 +245,86 @@ export async function chatRoutes(app: FastifyInstance) {
           title?: string;
           description?: string;
           difficulty?: number;
+          category?: "CLEANING" | "SHOPPING" | "ADMINISTRATIVE" | "PERSONAL_GROWTH" | "OTHER";
           assignToUserId?: string;
         }): Promise<any> => {
           if (!householdId) return { error: "User is not part of any household." };
 
           if (action === "create") {
             if (!title) return { error: "Title is required for creation." };
+
+            // Guardrail: verify assignee belongs to the household
+            if (assignToUserId) {
+              const assignee = await prisma.user.findUnique({
+                where: { id: assignToUserId },
+                select: { householdId: true },
+              });
+              if (!assignee || assignee.householdId !== householdId) {
+                return { error: "Cannot assign task: target user does not exist or is not in this household." };
+              }
+            }
+
+            const taskDifficulty = difficulty || 1;
+            const pointsValue = taskDifficulty * 10;
             const task = await prisma.task.create({
               data: {
                 title,
                 description,
-                difficulty: difficulty || 1,
+                difficulty: taskDifficulty,
+                pointsValue,
+                category: category || "OTHER",
                 createdById: userId,
                 householdId,
                 assignedToId: assignToUserId,
+                status: assignToUserId ? "IN_PROGRESS" : "PENDING",
               },
             });
+            if (task.assignedToId) {
+              const assignee = await prisma.user.findUnique({ where: { id: task.assignedToId } });
+              if (assignee && assignee.email) {
+                sendTaskAssignedEmail(assignee.id, assignee.email, task.title, task.pointsValue).catch(e => console.error("Email failed:", e));
+              }
+            }
             return { success: true, task };
           }
 
           if (action === "assign") {
             if (!taskId || !assignToUserId) return { error: "taskId and assignToUserId required." };
+
+            // Guardrail: verify assignee belongs to the household
+            const assignee = await prisma.user.findUnique({
+              where: { id: assignToUserId },
+              select: { householdId: true },
+            });
+            if (!assignee || assignee.householdId !== householdId) {
+              return { error: "Cannot assign task: target user does not exist or is not in this household." };
+            }
+
             const task = await prisma.task.update({
               where: { id: taskId },
-              data: { assignedToId: assignToUserId },
+              data: { 
+                assignedToId: assignToUserId,
+                status: assignToUserId ? "IN_PROGRESS" : undefined
+              },
             });
+            if (task.assignedToId) {
+              const assignee = await prisma.user.findUnique({ where: { id: task.assignedToId } });
+              if (assignee && assignee.email) {
+                sendTaskAssignedEmail(assignee.id, assignee.email, task.title, task.pointsValue).catch(e => console.error("Email failed:", e));
+              }
+            }
             return { success: true, task };
           }
 
           if (action === "update") {
             if (!taskId) return { error: "taskId required for update." };
+            const updateData: any = { title, description, difficulty, category };
+            if (difficulty) {
+              updateData.pointsValue = difficulty * 10;
+            }
             const task = await prisma.task.update({
               where: { id: taskId },
-              data: { title, description, difficulty },
+              data: updateData,
             });
             return { success: true, task };
           }
@@ -253,12 +373,28 @@ export async function chatRoutes(app: FastifyInstance) {
 
     // ── Call the AI model with multi-step reasoning ────────
     try {
+      await prisma.chatMessage.create({
+        data: {
+          userId,
+          text: message,
+          role: "USER"
+        }
+      });
+
       const result = await generateText({
         model: geminiModel,
         system: SYSTEM_PROMPT,
         prompt: `[User: ${user.name ?? "Unknown"}] ${message}`,
         tools: aiTools as any,
         stopWhen: stepCountIs(10), // maxSteps: 10
+      });
+
+      await prisma.chatMessage.create({
+        data: {
+          userId,
+          text: result.text,
+          role: "AI"
+        }
       });
 
       return reply.status(200).send({
@@ -286,6 +422,32 @@ export async function chatRoutes(app: FastifyInstance) {
         message: "Failed to process AI request",
         details: errorMessage,
       });
+    }
+  });
+
+
+  app.get("/chat/history", async (request, reply) => {
+    const querySchema = z.object({
+      userId: z.string().uuid("userId must be a valid UUID"),
+    });
+
+    const parsed = querySchema.safeParse(request.query);
+    if (!parsed.success) {
+      return reply.status(400).send({ error: "Invalid query parameters", details: parsed.error.flatten().fieldErrors });
+    }
+
+    const { userId } = parsed.data;
+
+    try {
+      const messages = await prisma.chatMessage.findMany({
+        where: { userId },
+        orderBy: { createdAt: "asc" }
+      });
+
+      return reply.send({ success: true, messages });
+    } catch (err) {
+      app.log.error(err, "Chat history error");
+      return reply.status(500).send({ error: "Failed to fetch chat history" });
     }
   });
 }

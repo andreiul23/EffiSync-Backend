@@ -4,6 +4,7 @@ import { env } from "./config/env.js";
 import { healthRoutes } from "./routes/health.route.js";
 import { chatRoutes } from "./routes/chat.js";
 import { authRoutes } from "./routes/auth.js";
+import { taskRoutes } from "./routes/tasks.js";
 import { prisma } from "./lib/prisma.js";
 
 
@@ -30,7 +31,7 @@ async function main() {
 
   // ── Plugins ─────────────────────────────────────────────
   await app.register(cors, {
-    origin: env.NODE_ENV === "production" ? false : true,
+    origin: true, // Reflects the request origin (supports credentials, unlike "*")
     credentials: true,
   });
 
@@ -42,13 +43,16 @@ async function main() {
     const message =
       env.NODE_ENV === "production"
         ? "Internal Server Error"
-        : error.message;
+        : error.message || "Unknown error";
 
-    return reply.status(statusCode).send({
-      error: true,
-      message,
-      statusCode,
-    });
+    return reply
+      .status(statusCode)
+      .header("Content-Type", "application/json")
+      .send({
+        error: true,
+        message,
+        statusCode,
+      });
   });
 
   // ── Routes ──────────────────────────────────────────────
@@ -59,6 +63,7 @@ async function main() {
   await app.register(healthRoutes);
   await app.register(chatRoutes, { prefix: "/api" });
   await app.register(authRoutes, { prefix: "/auth" });
+  await app.register(taskRoutes, { prefix: "/api" });
 
   await app.ready();
   app.log.info(app.printRoutes({ commonPrefix: false }));
