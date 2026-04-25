@@ -34,6 +34,31 @@
     gap: $space-sm;
   }
 
+  &__demo-btn {
+    width: 100%;
+    margin-top: $space-sm;
+    padding: $space-sm $space-md;
+    border-radius: $radius-pill;
+    border: 1px solid rgba(180, 75, 199, 0.4);
+    background: rgba(180, 75, 199, 0.12);
+    color: $text-primary;
+    font-size: $fs-sm;
+    font-weight: $fw-semibold;
+    cursor: pointer;
+    transition: all $transition-base;
+
+    &:hover:not(:disabled) {
+      background: rgba(180, 75, 199, 0.22);
+      border-color: rgba(180, 75, 199, 0.65);
+      box-shadow: 0 0 18px rgba(180, 75, 199, 0.35);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
   &__divider {
     display: flex;
     align-items: center;

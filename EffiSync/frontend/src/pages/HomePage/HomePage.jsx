@@ -1,12 +1,16 @@
+import { lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import HeroBackground from '../../components/HeroBackground/HeroBackground';
 import GradientText from '../../components/GradientText/GradientText';
-import ColorBends from '../../components/ColorBends/ColorBends';
-import StickyScroll from '../../components/StickyScroll/StickyScroll';
 import SubscriptionCard from '../../components/SubscriptionCard/SubscriptionCard';
 import { productFeatures, subscriptionPlans } from '../../mockData';
 import './HomePage.scss';
+
+const HeroBackground = lazy(() => import('../../components/HeroBackground/HeroBackground'));
+const ColorBends = lazy(() => import('../../components/ColorBends/ColorBends'));
+const StickyScroll = lazy(() => import('../../components/StickyScroll/StickyScroll'));
+
+const FxFallback = () => <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #1a0820 0%, #2d0e35 100%)' }} />;
 
 function HomePage() {
   const { isLoggedIn } = useAuth();
@@ -15,7 +19,9 @@ function HomePage() {
     <div className="home">
       {/* Hero Section */}
       <section className="home__hero">
-        <HeroBackground />
+        <Suspense fallback={<FxFallback />}>
+          <HeroBackground />
+        </Suspense>
         <div className="home__hero-content">
           <GradientText
             className="home__gradient-title"
@@ -45,16 +51,18 @@ function HomePage() {
           </div>
         </div>
         <div className="home__hero-colorbends">
-          <ColorBends
-            colors={['#904399', '#5D0E66', '#F9C7FF']}
-            speed={0.15}
-            intensity={1.2}
-            frequency={0.8}
-            scale={1.2}
-            noise={0.1}
-            transparent={true}
-            bandWidth={5}
-          />
+          <Suspense fallback={null}>
+            <ColorBends
+              colors={['#904399', '#5D0E66', '#F9C7FF']}
+              speed={0.15}
+              intensity={1.2}
+              frequency={0.8}
+              scale={1.2}
+              noise={0.1}
+              transparent={true}
+              bandWidth={5}
+            />
+          </Suspense>
         </div>
         <div className="home__hero-scroll-indicator">
           <div className="home__scroll-dot"></div>
@@ -74,7 +82,9 @@ function HomePage() {
             to transform how you manage every hour of your day.
           </p>
         </div>
-        <StickyScroll features={productFeatures} />
+        <Suspense fallback={<div style={{ minHeight: '40vh' }} />}>
+          <StickyScroll features={productFeatures} />
+        </Suspense>
       </section>
 
       {/* Hook / Presentation Section */}

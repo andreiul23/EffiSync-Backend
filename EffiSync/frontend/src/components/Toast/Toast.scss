@@ -1,0 +1,105 @@
+.toast-stack {
+  position: fixed;
+  top: 80px;
+  right: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 10000;
+  pointer-events: none;
+  max-width: min(360px, calc(100vw - 32px));
+
+  @media (max-width: 640px) {
+    top: 72px;
+    right: 12px;
+    left: 12px;
+    max-width: none;
+  }
+}
+
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(20, 14, 30, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #f5f0ff;
+  font-size: 14px;
+  line-height: 1.4;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  animation: toastIn 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  &--closing {
+    animation: toastOut 0.25s ease forwards;
+  }
+
+  &__icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  &__msg {
+    flex: 1;
+    min-width: 0;
+    word-wrap: break-word;
+  }
+
+  &__action {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: inherit;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+
+    &:hover { background: rgba(255, 255, 255, 0.14); }
+  }
+
+  &__close {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.55);
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    padding: 0 2px;
+
+    &:hover { color: #fff; }
+  }
+
+  &--success { border-color: rgba(76, 175, 80, 0.5); }
+  &--success &__icon { background: rgba(76, 175, 80, 0.25); color: #b6f0b9; }
+
+  &--error { border-color: rgba(255, 99, 99, 0.55); }
+  &--error &__icon { background: rgba(255, 99, 99, 0.25); color: #ffd6d6; }
+
+  &--warning { border-color: rgba(255, 193, 7, 0.5); }
+  &--warning &__icon { background: rgba(255, 193, 7, 0.25); color: #ffe7a3; }
+
+  &--info { border-color: rgba(180, 75, 199, 0.45); }
+  &--info &__icon { background: rgba(180, 75, 199, 0.25); color: #f3c8ff; }
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes toastOut {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-8px) scale(0.98); }
+}

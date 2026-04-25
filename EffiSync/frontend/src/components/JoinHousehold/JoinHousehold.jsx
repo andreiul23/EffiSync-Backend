@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { calendar, households } from '../../services/api';
+import { useToast } from '../Toast/ToastProvider';
 import './JoinHousehold.scss';
 
 /**
@@ -8,6 +10,7 @@ import './JoinHousehold.scss';
  */
 function JoinHousehold() {
   const { user, login } = useAuth();
+  const toast = useToast();
   const [mode, setMode] = useState(null); // 'create' | 'join'
   const [householdName, setHouseholdName] = useState('');
   const [inviteCode, setInviteCode] = useState('');
@@ -19,28 +22,17 @@ function JoinHousehold() {
     if (!householdName.trim()) { setError('Household name is required'); return; }
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:3000/api/households', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: householdName, createdById: user.id }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to create household');
+      const data = await households.create({ name: householdName, createdById: user.id });
       login({ ...user, householdId: data.household.id });
+      toast.success(`Household "${data.household.name}" created! Invite code: ${data.household.inviteCode || ''}`);
       try {
-        await fetch('http://localhost:3000/api/calendar/sync', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('effisync_jwt') || localStorage.getItem('token')}`
-          },
-          body: JSON.stringify({})
-        });
+        await calendar.sync();
       } catch (e) {
         console.error('Post-join sync failed', e);
       }
     } catch (err) {
       setError(err.message);
+      toast.error(err.message || 'Failed to create household');
     } finally {
       setLoading(false);
     }
@@ -51,28 +43,17 @@ function JoinHousehold() {
     if (!inviteCode.trim()) { setError('Invite code is required'); return; }
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:3000/api/households/join', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inviteCode: inviteCode.trim(), userId: user.id }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Invalid invite code');
+      const data = await households.join({ inviteCode: inviteCode.trim(), userId: user.id });
       login({ ...user, householdId: data.householdId });
+      toast.success('Joined household! Welcome 🎉');
       try {
-        await fetch('http://localhost:3000/api/calendar/sync', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('effisync_jwt') || localStorage.getItem('token')}`
-          },
-          body: JSON.stringify({})
-        });
+        await calendar.sync();
       } catch (e) {
         console.error('Post-join sync failed', e);
       }
     } catch (err) {
       setError(err.message);
+      toast.error(err.message || 'Invalid invite code');
     } finally {
       setLoading(false);
     }

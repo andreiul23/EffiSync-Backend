@@ -3,8 +3,13 @@ import { prisma } from "../lib/prisma.js";
 import { generateText } from "ai";
 import { geminiModel } from "../lib/ai.js";
 import { sendRealEmailViaGmail } from "./email.service.js";
+import { env } from "../config/env.js";
 
 export async function generateHouseholdReport(householdId: string) {
+  if (env.SAFE_MODE) {
+    return { success: true, message: "SAFE_MODE enabled: report generation is disabled" };
+  }
+
   try {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -75,6 +80,11 @@ Return ONLY valid HTML. Do not use markdown code blocks (like \`\`\`html), just 
 }
 
 export function startCronJobs() {
+  if (env.SAFE_MODE) {
+    console.log("SAFE_MODE enabled: cron jobs are disabled.");
+    return;
+  }
+
   // Scheduled to run every Sunday at 20:00
   cron.schedule("0 20 * * 0", async () => {
     console.log("Running weekly household reports cron job...");

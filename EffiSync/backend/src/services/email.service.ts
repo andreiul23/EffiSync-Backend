@@ -14,6 +14,11 @@ function getGmailClient(userRefreshToken: string) {
 }
 
 export async function sendRealEmailViaGmail(userId: string, to: string, subject: string, body: string) {
+  if (env.SAFE_MODE) {
+    console.log(`[SAFE_MODE] Skipping email to ${to} with subject: ${subject}`);
+    return;
+  }
+
   try {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user || !user.googleRefreshToken) {

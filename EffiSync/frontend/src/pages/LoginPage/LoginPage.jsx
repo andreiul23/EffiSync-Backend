@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { auth } from '../../services/api';
+import { auth, demo } from '../../services/api';
+import { useToast } from '../../components/Toast/ToastProvider';
 import Aurora from '../../components/Aurora/Aurora';
 import AuthCard from '../../components/AuthCard/AuthCard';
 import SocialButton from '../../components/SocialButton/SocialButton';
@@ -10,9 +11,11 @@ import './LoginPage.scss';
 function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const toast = useToast();
   const [form, setForm] = useState({ email: '', password: '' });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
 
   const validate = () => {
     const errs = {};
@@ -37,21 +40,42 @@ function LoginPage() {
     try {
       const data = await auth.login({ email: form.email, password: form.password });
       // data = { success: true, userId: "..." }
+      if (data.token) {
+        localStorage.setItem('effisync_jwt', data.token);
+      }
       login({ id: data.userId, email: form.email, householdId: data.householdId ?? null });
+      toast.success(`Welcome back!`);
       navigate('/groups');
     } catch (error) {
+      toast.error(error.message || 'Login failed. Please try again.');
       setErrors({ email: error.message || 'Login failed. Please try again.' });
     } finally {
       setLoading(false);
     }
   };
 
+  const handleDemoLogin = async () => {
+    setDemoLoading(true);
+    try {
+      const data = await demo.login();
+      if (!data.success || !data.token) throw new Error(data.message || 'Demo login failed');
+      localStorage.setItem('effisync_jwt', data.token);
+      login(data.user);
+      toast.success(data.message || 'Demo loaded!');
+      navigate('/groups');
+    } catch (error) {
+      toast.error(error.message || 'Could not start the demo. Try again.');
+    } finally {
+      setDemoLoading(false);
+    }
+  };
+
   const handleGoogleLogin = () => {
-    window.location.href = 'http://localhost:3000/api/auth/google';
+    window.location.href = auth.googleLoginUrl();
   };
 
   const handleGithubLogin = () => {
-    window.location.href = 'http://localhost:3000/api/auth/github';
+    window.location.href = auth.githubLoginUrl();
   };
 
   return (
@@ -66,6 +90,15 @@ function LoginPage() {
             <SocialButton provider="google" onClick={handleGoogleLogin} />
             <SocialButton provider="github" onClick={handleGithubLogin} />
           </div>
+
+          <button
+            type="button"
+            className="login-page__demo-btn"
+            onClick={handleDemoLogin}
+            disabled={demoLoading}
+          >
+            {demoLoading ? 'Loading demo…' : '✨ Try Live Demo (no signup)'}
+          </button>
 
           <div className="login-page__divider">
             <span>or continue with email</span>

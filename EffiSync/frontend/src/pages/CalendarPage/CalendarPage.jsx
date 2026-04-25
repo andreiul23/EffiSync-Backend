@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { api } from '../../services/api';
+import { api, calendar as calendarApi, households } from '../../services/api';
 import CalendarGrid from '../../components/CalendarGrid/CalendarGrid';
 import DayPreview from '../../components/DayPreview/DayPreview';
 import TaskModal from '../../components/TaskModal/TaskModal';
@@ -10,6 +10,7 @@ import GroupsSliderMenu from '../../components/GroupsSliderMenu/GroupsSliderMenu
 import CreateGroupModal from '../../components/CreateGroupModal/CreateGroupModal';
 import JoinGroupModal from '../../components/JoinGroupModal/JoinGroupModal';
 import CustomDropdown from '../../components/CustomDropdown/CustomDropdown';
+import { useToast } from '../../components/Toast/ToastProvider';
 import { mockTasks as initialTasks } from '../../mockData';
 import './CalendarPage.scss';
 
@@ -18,6 +19,7 @@ const MONTH_NAMES = ['January','February','March','April','May','June','July','A
 function CalendarPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const toast = useToast();
   const today = new Date();
 
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
@@ -46,6 +48,7 @@ function CalendarPage() {
       setTasks(mappedTasks);
     } catch (err) {
       console.error('Failed to fetch tasks:', err);
+      toast.error('Failed to load tasks');
     }
   };
 
@@ -57,8 +60,7 @@ function CalendarPage() {
     const fetchHousehold = async () => {
       if (user?.householdId) {
         try {
-          const res = await fetch(`http://localhost:3000/api/households/${user.householdId}`);
-          const data = await res.json();
+          const data = await households.getById(user.householdId);
           if (data.success && data.household) {
             setGroups([data.household]);
           }
@@ -106,14 +108,20 @@ function CalendarPage() {
   const [isSyncing, setIsSyncing] = useState(false);
   const handleSyncCalendar = async () => {
     setIsSyncing(true);
+    const loadingId = toast.info('Syncing with Google Calendar…', { duration: 0 });
     try {
-      const res = await api.post('/calendar/sync', {});
+      const res = await calendarApi.sync();
+      toast.dismiss(loadingId);
       if (res.success) {
-        // Refresh tasks
         await fetchTasks();
+        toast.success(`Calendar synced! ${res.eventsSynced ?? ''} event(s).`);
+      } else {
+        toast.warning(res.message || 'Sync returned no changes');
       }
     } catch (err) {
       console.error('Calendar sync failed:', err);
+      toast.dismiss(loadingId);
+      toast.error(err.message || 'Calendar sync failed. Connect Google Calendar in your account.');
     } finally {
       setIsSyncing(false);
     }
@@ -237,13 +245,8 @@ function CalendarPage() {
 
   const handleCreateGroup = async (group) => {
     try {
-      const res = await fetch('http://localhost:3000/api/households', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: group.name, createdById: user.id }),
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
+      const data = await households.create({ name: group.name, createdById: user.id });
+      if (data.success) {
         const newGroup = data.household;
         if (!newGroup.members) {
           newGroup.members = [{ id: user.id }];

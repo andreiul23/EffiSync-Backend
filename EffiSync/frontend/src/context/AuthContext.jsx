@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { auth as authApi } from '../services/api';
+import { ai, auth as authApi } from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -28,12 +28,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (!isLoggedIn || !user?.id || aiReady) return;
 
-    fetch('http://localhost:3000/api/ai/initialize', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: user.id }),
-    })
-      .then(r => r.json())
+    ai.initialize()
       .then(data => {
         if (data.success) {
           setAiReady(true);
@@ -69,6 +64,8 @@ export function AuthProvider({ children }) {
     setAiMessage(null);
     localStorage.removeItem('effisync_user');
     localStorage.removeItem('effisync_logged_in');
+    localStorage.removeItem('effisync_jwt');
+    localStorage.removeItem('token');
   }, []);
 
   const clearAiMessage = useCallback(() => setAiMessage(null), []);

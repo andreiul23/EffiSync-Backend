@@ -38,6 +38,20 @@ const envSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().min(1, "GOOGLE_CLIENT_ID is required"),
   GOOGLE_CLIENT_SECRET: z.string().min(1, "GOOGLE_CLIENT_SECRET is required"),
   GOOGLE_REDIRECT_URI: z.string().url("GOOGLE_REDIRECT_URI must be a valid URL"),
+
+  // GitHub OAuth — optional (feature flag)
+  GITHUB_CLIENT_ID: z.string().min(1).optional(),
+  GITHUB_CLIENT_SECRET: z.string().min(1).optional(),
+
+  // Public URLs used in OAuth redirects. Default to localhost for dev.
+  FRONTEND_URL: z.string().url().default("http://localhost:5173"),
+  BACKEND_URL: z.string().url().default("http://localhost:3000"),
+
+  JWT_SECRET: z.string().min(32, "JWT_SECRET is required and must be at least 32 characters long"),
+  SAFE_MODE: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((value) => value === "true"),
 });
 
 export type Env = z.infer<typeof envSchema>;

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { tasks as tasksApi } from '../../services/api';
+import { debug, households, tasks as tasksApi } from '../../services/api';
 import GroupCalendar from '../../components/GroupCalendar/GroupCalendar';
 import GroupTaskList from '../../components/GroupTaskList/GroupTaskList';
 import MembersList from '../../components/MembersList/MembersList';
@@ -8,6 +8,8 @@ import AiTaskSuggestionModal from '../../components/AiTaskSuggestionModal/AiTask
 import AddGroupTaskModal from '../../components/AddGroupTaskModal/AddGroupTaskModal';
 import MemberProfileModal from '../../components/MemberProfileModal/MemberProfileModal';
 import JoinHousehold from '../../components/JoinHousehold/JoinHousehold';
+import { SkeletonList } from '../../components/Skeleton/Skeleton';
+import { useToast } from '../../components/Toast/ToastProvider';
 import './GroupsPage.scss';
 
 function GroupsPage() {
@@ -22,6 +24,7 @@ function GroupsPage() {
 }
 
 function GroupsDashboard({ user }) {
+  const toast = useToast();
   const [groupTasks, setGroupTasks] = useState([]);
   const [members, setMembers] = useState([]);
   const [householdName, setHouseholdName] = useState('');
@@ -43,14 +46,14 @@ function GroupsDashboard({ user }) {
         setGroupTasks(taskData.tasks || []);
 
         // Household details (members + name)
-        const res = await fetch(`http://localhost:3000/api/households/${user.householdId}`);
-        const hData = await res.json();
+        const hData = await households.getById(user.householdId);
         if (hData.success) {
           setHouseholdName(hData.household.name);
           setMembers(hData.household.members || []);
         }
       } catch (err) {
         console.error('Failed to fetch household data:', err);
+        toast.error('Could not load household data.');
       } finally {
         setLoading(false);
       }
@@ -78,8 +81,10 @@ function GroupsDashboard({ user }) {
       } else {
         setGroupTasks(prev => prev.map(t => t.id === task.id ? data.task : t));
       }
+      toast.success(`Accepted: ${task.title}`);
     } catch (err) {
       console.error('Failed to accept task:', err);
+      toast.error(err.message || 'Failed to accept task');
     }
   };
 
@@ -87,8 +92,10 @@ function GroupsDashboard({ user }) {
     try {
       const data = await tasksApi.veto(task.id, { userId: user.id });
       setGroupTasks(prev => prev.map(t => t.id === task.id ? data.task : t));
+      toast.info(`Veto applied to ${task.title}`);
     } catch (err) {
       console.error('Failed to veto task:', err);
+      toast.error(err.message || 'Veto failed (may be on cooldown)');
     }
   };
 
@@ -96,17 +103,13 @@ function GroupsDashboard({ user }) {
   const handleCompleteTask = async (taskId) => {
     setCompletingTaskId(taskId);
     try {
-      const res = await fetch(`http://localhost:3000/api/tasks/${taskId}/complete`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      const data = await tasksApi.complete(taskId, { userId: user.id });
       setGroupTasks(prev => prev.map(t => t.id === taskId ? data.task : t));
       setMembers(prev => prev.map(m => m.id === user.id ? { ...m, pointsBalance: (m.pointsBalance || 0) + data.task.pointsValue } : m));
+      toast.success(`+${data.task.pointsValue} pts! Task completed 🎉`);
     } catch (err) {
       console.error('Failed to complete task:', err);
+      toast.error(err.message || 'Failed to complete task');
     } finally {
       setCompletingTaskId(null);
     }
@@ -120,8 +123,10 @@ function GroupsDashboard({ user }) {
         createdById: user.id,
       });
       setGroupTasks(prev => [...prev, data.task]);
+      toast.success(`Created: ${data.task.title}`);
     } catch (err) {
       console.error('Failed to create task:', err);
+      toast.error(err.message || 'Failed to create task');
     }
   };
 
@@ -143,9 +148,21 @@ function GroupsDashboard({ user }) {
 
   if (loading) {
     return (
-      <div className="groups-page groups-page--loading">
-        <div className="groups-page__spinner" />
-        <p>Loading household…</p>
+      <div className="groups-page">
+        <div className="groups-page__header">
+          <h1 className="groups-page__title">Loading household…</h1>
+        </div>
+        <div className="groups-page__content">
+          <div className="groups-page__sidebar groups-page__sidebar--left">
+            <SkeletonList count={4} />
+          </div>
+          <div className="groups-page__main">
+            <SkeletonList count={3} />
+          </div>
+          <div className="groups-page__sidebar groups-page__sidebar--right">
+            <SkeletonList count={3} />
+          </div>
+        </div>
       </div>
     );
   }
@@ -160,13 +177,15 @@ function GroupsDashboard({ user }) {
             className="groups-page__btn-complete" 
             style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
             onClick={async () => {
+              const loadingId = toast.info('Generating AI report and sending emails…', { duration: 0 });
               try {
-                alert('Generating report and sending emails... This might take a few seconds.');
-                await fetch(`http://localhost:3000/api/debug/trigger-report/${user.householdId}`);
-                alert('AI Weekly Report generated and sent!');
+                await debug.triggerReport(user.householdId);
+                toast.dismiss(loadingId);
+                toast.success('AI Weekly Report generated and sent!');
               } catch (e) {
                 console.error(e);
-                alert('Failed to generate report.');
+                toast.dismiss(loadingId);
+                toast.error('Failed to generate report.');
               }
             }}
           >
@@ -209,7 +228,7 @@ function GroupsDashboard({ user }) {
 
       <div className="groups-page__content">
         <div className="groups-page__sidebar groups-page__sidebar--left">
-          <GroupTaskList tasks={groupTasks} onTaskClick={handleTaskClick} currentUserId={user.id} />
+          <GroupTaskList tasks={groupTasks} onTaskClick={handleTaskClick} currentUserId={user.id} onCreateClick={() => setShowAddTask(true)} />
         </div>
         <div className="groups-page__main">
           <GroupCalendar groupTasks={groupTasks} members={members} />

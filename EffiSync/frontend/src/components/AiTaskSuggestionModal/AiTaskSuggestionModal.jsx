@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import CustomDropdown from '../CustomDropdown/CustomDropdown';
+import { households } from '../../services/api';
 import './AiTaskSuggestionModal.scss';
 
 const TIME_OPTIONS = [
@@ -24,8 +25,7 @@ function AiTaskSuggestionModal({ isOpen, onClose, task, userPoints, onAccept, on
       } else {
         // Fetch suggested time based on group calendar!
         setLoadingTime(true);
-        fetch(`http://localhost:3000/api/households/${task.householdId}/suggest-time`)
-          .then(res => res.json())
+        households.suggestTime(task.householdId)
           .then(data => {
             if (data.success && data.suggestedTime) {
               setEditedTime(data.suggestedTime);

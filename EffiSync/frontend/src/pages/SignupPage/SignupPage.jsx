@@ -4,11 +4,13 @@ import { useAuth } from '../../context/AuthContext';
 import { auth } from '../../services/api';
 import Aurora from '../../components/Aurora/Aurora';
 import AuthCard from '../../components/AuthCard/AuthCard';
+import { useToast } from '../../components/Toast/ToastProvider';
 import './SignupPage.scss';
 
 function SignupPage() {
   const navigate = useNavigate();
   const { signup } = useAuth();
+  const toast = useToast();
   const [form, setForm] = useState({
     firstName: '', lastName: '', phone: '',
     email: '', password: '', confirmPassword: '',
@@ -47,15 +49,20 @@ function SignupPage() {
         password: form.password,
       });
       // data = { success: true, userId: "..." }
+      if (data.token) {
+        localStorage.setItem('effisync_jwt', data.token);
+      }
       signup({
         id: data.userId,
         email: form.email,
         name: `${form.firstName} ${form.lastName}`.trim(),
         householdId: null, // new users always start with no household
       });
+      toast.success('Account created! Welcome to EffiSync 🎉');
       navigate('/groups'); // will show JoinHousehold guard
     } catch (error) {
       setErrors({ email: error.message || 'Registration failed. Please try again.' });
+      toast.error(error.message || 'Registration failed');
     } finally {
       setLoading(false);
     }

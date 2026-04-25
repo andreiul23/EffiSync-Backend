@@ -6,6 +6,7 @@ import { prisma } from "../lib/prisma.js";
 import { getUserBusySlots, getHouseholdAvailability } from "../services/calendar.service.js";
 import { useVeto } from "../services/economy.service.js";
 import { sendTaskAssignedEmail } from "../services/email.service.js";
+import { getAuthUserId, requireAuth } from "../lib/auth.js";
 
 // ─── System Prompt ──────────────────────────────────────────
 
@@ -34,7 +35,7 @@ If a user asks a question like "Who should clean the kitchen?", you MUST follow 
 // ─── Request Validation ─────────────────────────────────────
 
 const chatBodySchema = z.object({
-  userId: z.string().uuid("userId must be a valid UUID"),
+  userId: z.string().uuid("userId must be a valid UUID").optional(),
   message: z
     .string()
     .min(1, "message cannot be empty")
@@ -43,6 +44,8 @@ const chatBodySchema = z.object({
 // ─── Route ──────────────────────────────────────────────────
 
 export async function chatRoutes(app: FastifyInstance) {
+  app.addHook("preHandler", requireAuth);
+
   app.post("/chat", async (request, reply) => {
     // ── Validate request body ──────────────────────────────
     const parsed = chatBodySchema.safeParse(request.body);
@@ -55,11 +58,12 @@ export async function chatRoutes(app: FastifyInstance) {
       });
     }
 
-    const { userId, message } = parsed.data;
+    const authUserId = getAuthUserId(request);
+    const { message } = parsed.data;
 
     // ── Verify user exists and fetch household context ─────
     const user = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: authUserId },
       select: { id: true, name: true, householdId: true },
     });
 
@@ -70,6 +74,7 @@ export async function chatRoutes(app: FastifyInstance) {
       });
     }
 
+    const userId = user.id;
     const householdId = user.householdId;
 
     // ── Define AI Tools (scoped to user's household) ───────
@@ -440,16 +445,7 @@ export async function chatRoutes(app: FastifyInstance) {
 
 
   app.get("/chat/history", async (request, reply) => {
-    const querySchema = z.object({
-      userId: z.string().uuid("userId must be a valid UUID"),
-    });
-
-    const parsed = querySchema.safeParse(request.query);
-    if (!parsed.success) {
-      return reply.status(400).send({ error: "Invalid query parameters", details: parsed.error.flatten().fieldErrors });
-    }
-
-    const { userId } = parsed.data;
+    const userId = getAuthUserId(request);
 
     try {
       const messages = await prisma.chatMessage.findMany({

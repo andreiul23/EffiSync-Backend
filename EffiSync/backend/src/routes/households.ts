@@ -2,18 +2,21 @@ import type { FastifyInstance } from "fastify";
 import { prisma } from "../lib/prisma.js";
 import { z } from "zod";
 import { randomBytes } from "crypto";
+import { getAuthUserId, requireAuth } from "../lib/auth.js";
 
 export async function householdRoutes(app: FastifyInstance) {
+  app.addHook("preHandler", requireAuth);
+
   // POST /api/households — Create a new household
   app.post("/households", async (request, reply) => {
     const bodySchema = z.object({
       name: z.string().min(1),
-      createdById: z.string().uuid(),
     });
     const parsed = bodySchema.safeParse(request.body);
     if (!parsed.success) return reply.status(400).send({ error: "Invalid body", details: parsed.error.flatten().fieldErrors });
 
-    const { name, createdById } = parsed.data;
+    const { name } = parsed.data;
+    const createdById = getAuthUserId(request);
 
     const user = await prisma.user.findUnique({ where: { id: createdById } });
     if (!user) return reply.status(404).send({ error: "User not found" });
@@ -41,12 +44,12 @@ export async function householdRoutes(app: FastifyInstance) {
   app.post("/households/join", async (request, reply) => {
     const bodySchema = z.object({
       inviteCode: z.string().min(1),
-      userId: z.string().uuid(),
     });
     const parsed = bodySchema.safeParse(request.body);
     if (!parsed.success) return reply.status(400).send({ error: "Invalid body" });
 
-    const { inviteCode, userId } = parsed.data;
+    const { inviteCode } = parsed.data;
+    const userId = getAuthUserId(request);
 
     const household = await prisma.household.findUnique({ where: { inviteCode } });
     if (!household) return reply.status(404).send({ error: "Invalid invite code" });
@@ -62,6 +65,17 @@ export async function householdRoutes(app: FastifyInstance) {
   // GET /api/households/:id/suggest-time — Auto-suggest a time
   app.get("/households/:id/suggest-time", async (request, reply) => {
     const { id } = request.params as { id: string };
+    const userId = getAuthUserId(request);
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { householdId: true },
+    });
+
+    if (!user?.householdId || user.householdId !== id) {
+      return reply.status(403).send({ error: "You can only access your own household" });
+    }
+
     const { getHouseholdAvailability } = await import("../services/calendar.service.js");
 
     const timeMin = new Date();
@@ -87,7 +101,7 @@ export async function householdRoutes(app: FastifyInstance) {
         mergedSlots.push(slot);
       } else {
         const last = mergedSlots[mergedSlots.length - 1];
-        if (slot.start.getTime() <= last.end.getTime()) {
+        if (last && slot.start.getTime() <= last.end.getTime()) {
           last.end = new Date(Math.max(last.end.getTime(), slot.end.getTime()));
         } else {
           mergedSlots.push(slot);
@@ -128,6 +142,16 @@ export async function householdRoutes(app: FastifyInstance) {
   // GET /api/households/:id — Get household details
   app.get("/households/:id", async (request, reply) => {
     const { id } = request.params as { id: string };
+    const userId = getAuthUserId(request);
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { householdId: true },
+    });
+
+    if (!user?.householdId || user.householdId !== id) {
+      return reply.status(403).send({ error: "You can only access your own household" });
+    }
 
     const household = await prisma.household.findUnique({
       where: { id },
