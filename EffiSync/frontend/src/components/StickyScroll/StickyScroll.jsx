@@ -36,10 +36,17 @@ function StickyScroll({ features }) {
       <div className="sticky-visual sticky-visual--calendar">
         <div className="sticky-visual__grid">
           {Array.from({ length: 7 }, (_, i) => (
-            <div key={i} className={`sticky-visual__day ${i === 2 ? 'sticky-visual__day--active' : ''}`}>
+            <div
+              key={i}
+              className={`sticky-visual__day ${i === 2 ? 'sticky-visual__day--active' : ''}`}
+            >
               <span className="sticky-visual__day-num">{i + 14}</span>
               {i === 2 && <div className="sticky-visual__task">Team sync</div>}
-              {i === 4 && <div className="sticky-visual__task sticky-visual__task--alt">Review</div>}
+              {i === 4 && (
+                <div className="sticky-visual__task sticky-visual__task--alt">
+                  Review
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -49,13 +56,20 @@ function StickyScroll({ features }) {
       <div className="sticky-visual sticky-visual--groups">
         <div className="sticky-visual__avatars">
           {['A', 'M', 'E', 'S'].map((letter, i) => (
-            <div key={i} className="sticky-visual__avatar" style={{ animationDelay: `${i * 0.1}s` }}>
+            <div
+              key={i}
+              className="sticky-visual__avatar"
+              style={{ animationDelay: `${i * 0.1}s` }}
+            >
               {letter}
             </div>
           ))}
         </div>
         <div className="sticky-visual__status">
-          <div className="sticky-visual__bar sticky-visual__bar--filled" style={{ width: '75%' }}></div>
+          <div
+            className="sticky-visual__bar sticky-visual__bar--filled"
+            style={{ width: '75%' }}
+          ></div>
           <span>3/4 available</span>
         </div>
       </div>
@@ -91,7 +105,10 @@ function StickyScroll({ features }) {
               <div className="sticky-visual__meter-track">
                 <div
                   className="sticky-visual__meter-fill"
-                  style={{ width: `${meter.value}%`, animationDelay: `${i * 0.2}s` }}
+                  style={{
+                    width: `${meter.value}%`,
+                    animationDelay: `${i * 0.2}s`,
+                  }}
                 ></div>
               </div>
               <span className="sticky-visual__meter-label">{meter.label}</span>
@@ -121,7 +138,10 @@ function StickyScroll({ features }) {
 
       <div className="sticky-scroll__right">
         <div className="sticky-scroll__sticky">
-          <InfoCard feature={features[activeIndex]} visual={visuals[features[activeIndex]?.visual]} />
+          <InfoCard
+            feature={features[activeIndex]}
+            visual={visuals[features[activeIndex]?.visual]}
+          />
         </div>
       </div>
     </div>

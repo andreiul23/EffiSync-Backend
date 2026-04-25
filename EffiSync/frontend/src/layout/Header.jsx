@@ -8,7 +8,8 @@ function Header() {
   const navigate = useNavigate();
 
   const isHome = location.pathname === '/';
-  const isAuthPage = location.pathname === '/login' || location.pathname === '/signup';
+  const isAuthPage =
+    location.pathname === '/login' || location.pathname === '/signup';
 
   const handleScrollTo = (sectionId) => {
     if (location.pathname !== '/') {
@@ -38,7 +39,11 @@ function Header() {
     <header className="header">
       <nav className="header__nav">
         <a href="/" className="header__logo" onClick={handleLogoClick}>
-          <img src="/logo.svg" alt="EffiSync Logo" className="header__logo-icon" />
+          <img
+            src="/logo_alb.png"
+            alt="EffiSync Logo"
+            className="header__logo-icon"
+          />
           <span className="header__logo-text">EffiSync</span>
         </a>
 
@@ -62,10 +67,19 @@ function Header() {
 
           {isLoggedIn ? (
             <>
-              <Link to="/calendar" className="header__link">Calendar</Link>
-              <Link to="/groups" className="header__link">Groups</Link>
-              <Link to="/account" className="header__link">Account</Link>
-              <button className="header__btn header__btn--ghost" onClick={logout}>
+              <Link to="/calendar" className="header__link">
+                Calendar
+              </Link>
+              <Link to="/groups" className="header__link">
+                Groups
+              </Link>
+              <Link to="/account" className="header__link">
+                Account
+              </Link>
+              <button
+                className="header__btn header__btn--ghost"
+                onClick={logout}
+              >
                 Log Out
               </button>
             </>
