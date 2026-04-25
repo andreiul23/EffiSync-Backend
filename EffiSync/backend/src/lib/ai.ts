@@ -10,4 +10,4 @@ const google = createGoogleGenerativeAI({
   apiKey: env.GOOGLE_GENERATIVE_AI_API_KEY,
 });
 
-export const geminiModel: LanguageModel = google("gemini-1.5-flash");
+export const geminiModel: LanguageModel = google("gemini-2.5-flash");

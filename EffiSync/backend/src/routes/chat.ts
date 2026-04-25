@@ -36,7 +36,6 @@ const chatBodySchema = z.object({
     .min(1, "message cannot be empty")
     .max(4000, "message is too long"),
 });
-
 // ─── Route ──────────────────────────────────────────────────
 
 export async function chatRoutes(app: FastifyInstance) {
@@ -123,7 +122,7 @@ export async function chatRoutes(app: FastifyInstance) {
           }
 
           const busySlots = await getUserBusySlots(targetUserId, targetUser.googleRefreshToken);
-          
+
           // Optionally save to Availability table
           for (const slot of busySlots) {
             await prisma.availability.create({
@@ -230,7 +229,7 @@ export async function chatRoutes(app: FastifyInstance) {
           });
 
           const candidates = [];
-          
+
           for (const member of members) {
             let isBusy = false;
             if (member.googleRefreshToken) {

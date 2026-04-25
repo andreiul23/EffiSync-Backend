@@ -1,7 +1,7 @@
 import { google } from "googleapis";
 import { env } from "../config/env.js";
 
-const oauth2Client = new google.auth.OAuth2(
+export const oauth2Client = new google.auth.OAuth2(
   env.GOOGLE_CLIENT_ID,
   env.GOOGLE_CLIENT_SECRET,
   env.GOOGLE_REDIRECT_URI
@@ -10,7 +10,11 @@ const oauth2Client = new google.auth.OAuth2(
 export const getAuthUrl = () => {
   return oauth2Client.generateAuthUrl({
     access_type: "offline",
-    scope: ["https://www.googleapis.com/auth/calendar.readonly"],
+    scope: [
+      "https://www.googleapis.com/auth/calendar.readonly",
+      "https://www.googleapis.com/auth/userinfo.email",
+      "https://www.googleapis.com/auth/userinfo.profile"
+    ],
     prompt: "consent",
   });
 };
