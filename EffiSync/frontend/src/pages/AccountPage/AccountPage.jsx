@@ -5,13 +5,15 @@ import './AccountPage.scss';
 function AccountPage() {
   const { user } = useAuth();
 
-  const initials = `${(user?.firstName || 'A').charAt(0)}${(user?.lastName || 'P').charAt(0)}`;
+  const nameStr = user?.name || 'Alex Popescu';
+  const nameParts = nameStr.split(' ');
+  const initials = `${nameParts[0]?.[0] || ''}${nameParts[1]?.[0] || ''}`.toUpperCase() || 'AP';
 
   return (
     <div className="account-page">
       <div className="account-page__card">
         <div className="account-page__avatar">{initials}</div>
-        <h1 className="account-page__name">{user?.firstName || 'Alex'} {user?.lastName || 'Popescu'}</h1>
+        <h1 className="account-page__name">{nameStr}</h1>
         <p className="account-page__email">{user?.email || 'alex.popescu@gmail.com'}</p>
 
         <div className="account-page__section">

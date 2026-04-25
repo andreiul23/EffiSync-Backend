@@ -17,8 +17,9 @@ export async function syncCalendarToTasks(userId: string, refreshToken: string, 
   const calendar = google.calendar({ version: "v3", auth: client });
 
   const timeMin = new Date();
+  timeMin.setMonth(timeMin.getMonth() - 1);
   const timeMax = new Date();
-  timeMax.setDate(timeMax.getDate() + 14); // Next 2 weeks
+  timeMax.setMonth(timeMax.getMonth() + 3);
 
   let events;
   try {
@@ -92,4 +93,24 @@ export async function syncCalendarToTasks(userId: string, refreshToken: string, 
   }
 
   return { synced, total: events.length };
+}
+
+/**
+ * Wrapper for syncCalendarToTasks that looks up the user's refreshToken and household.
+ */
+export async function syncGoogleCalendar(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId }
+  });
+
+  if (!user || !user.googleRefreshToken) {
+    return { synced: 0, error: "No Google token found for user" };
+  }
+
+  if (!user.householdId) {
+    console.log(`User ${userId} has no household; skipping calendar sync.`);
+    return { synced: 0, skipped: true, reason: "No household" };
+  }
+
+  return syncCalendarToTasks(userId, user.googleRefreshToken, user.householdId);
 }

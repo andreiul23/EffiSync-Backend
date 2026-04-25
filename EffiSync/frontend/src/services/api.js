@@ -9,7 +9,7 @@ const AUTH_BASE_URL = `${API_BASE_URL}/auth`;
 // ─── Core Fetch Wrapper ─────────────────────────────────
 
 export const apiFetch = async (url, options = {}) => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('effisync_jwt') || localStorage.getItem('token');
   const headers = {
     'Content-Type': 'application/json',
     ...options.headers,
@@ -113,5 +113,6 @@ export const api = {
   get: (endpoint, options) => get(`${API_BASE_URL}${endpoint}`, options),
   post: (endpoint, body, options) => post(`${API_BASE_URL}${endpoint}`, body, options),
   put: (endpoint, body, options) => put(`${API_BASE_URL}${endpoint}`, body, options),
+  patch: (endpoint, body, options) => apiFetch(`${API_BASE_URL}${endpoint}`, { ...options, method: 'PATCH', body: JSON.stringify(body) }),
   delete: (endpoint, options) => del(`${API_BASE_URL}${endpoint}`, options),
 };

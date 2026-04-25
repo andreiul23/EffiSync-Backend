@@ -39,7 +39,7 @@ function GroupsDashboard({ user }) {
       setLoading(true);
       try {
         // Tasks for this household
-        const taskData = await tasksApi.list({ householdId: user.householdId });
+        const taskData = await tasksApi.list({ householdId: user.householdId, type: 'GROUP' });
         setGroupTasks(taskData.tasks || []);
 
         // Household details (members + name)
@@ -66,7 +66,18 @@ function GroupsDashboard({ user }) {
   const handleAcceptTask = async (task) => {
     try {
       const data = await tasksApi.accept(task.id, { userId: user.id });
-      setGroupTasks(prev => prev.map(t => t.id === task.id ? data.task : t));
+      
+      if (task.aiSuggestedTime) {
+        const [startStr] = task.aiSuggestedTime.split(' - ').map(s => s.trim());
+        const dateObj = task.dueDate ? new Date(task.dueDate) : new Date();
+        const [hour, min] = (startStr || '09:00').split(':');
+        dateObj.setHours(parseInt(hour), parseInt(min), 0, 0);
+        
+        const updateRes = await tasksApi.update(task.id, { dueDate: dateObj.toISOString() });
+        setGroupTasks(prev => prev.map(t => t.id === task.id ? updateRes.task : t));
+      } else {
+        setGroupTasks(prev => prev.map(t => t.id === task.id ? data.task : t));
+      }
     } catch (err) {
       console.error('Failed to accept task:', err);
     }
@@ -93,6 +104,7 @@ function GroupsDashboard({ user }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setGroupTasks(prev => prev.map(t => t.id === taskId ? data.task : t));
+      setMembers(prev => prev.map(m => m.id === user.id ? { ...m, pointsBalance: (m.pointsBalance || 0) + data.task.pointsValue } : m));
     } catch (err) {
       console.error('Failed to complete task:', err);
     } finally {
@@ -142,7 +154,25 @@ function GroupsDashboard({ user }) {
     <div className="groups-page">
       <div className="groups-page__header">
         <h1 className="groups-page__title">{householdName || 'My Group'}</h1>
-        <span className="groups-page__subtitle">Group calendar &amp; tasks</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <span className="groups-page__subtitle">Group calendar &amp; tasks</span>
+          <button 
+            className="groups-page__btn-complete" 
+            style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
+            onClick={async () => {
+              try {
+                alert('Generating report and sending emails... This might take a few seconds.');
+                await fetch(`http://localhost:3000/api/debug/trigger-report/${user.householdId}`);
+                alert('AI Weekly Report generated and sent!');
+              } catch (e) {
+                console.error(e);
+                alert('Failed to generate report.');
+              }
+            }}
+          >
+            ✨ Generate AI Report
+          </button>
+        </div>
       </div>
 
       {/* My tasks needing completion */}

@@ -10,7 +10,7 @@ import GroupsSliderMenu from '../../components/GroupsSliderMenu/GroupsSliderMenu
 import CreateGroupModal from '../../components/CreateGroupModal/CreateGroupModal';
 import JoinGroupModal from '../../components/JoinGroupModal/JoinGroupModal';
 import CustomDropdown from '../../components/CustomDropdown/CustomDropdown';
-import { mockTasks as initialTasks, mockGroups as initialGroups } from '../../mockData';
+import { mockTasks as initialTasks } from '../../mockData';
 import './CalendarPage.scss';
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -23,19 +23,54 @@ function CalendarPage() {
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
   const [tasks, setTasks] = useState([]);
-  const [groups, setGroups] = useState(initialGroups);
+  const [groups, setGroups] = useState([]);
+
+  const fetchTasks = async () => {
+    if (!user?.id) return;
+    try {
+      const query = `?userId=${user.id}`;
+      const data = await api.get(`/tasks${query}`);
+      const rawTasks = Array.isArray(data) ? data : (data.tasks || []);
+      const mappedTasks = rawTasks.map(t => {
+        if (!t.dueDate) return t;
+        const d = new Date(t.dueDate);
+        const date = d.toISOString().split('T')[0];
+        const startTime = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+        let endTime = '23:59';
+        if (t.duration) {
+          const endD = new Date(d.getTime() + t.duration * 60000);
+          endTime = `${String(endD.getHours()).padStart(2,'0')}:${String(endD.getMinutes()).padStart(2,'0')}`;
+        }
+        return { ...t, date, startTime, endTime, done: t.status === 'COMPLETED' };
+      });
+      setTasks(mappedTasks);
+    } catch (err) {
+      console.error('Failed to fetch tasks:', err);
+    }
+  };
 
   useEffect(() => {
-    const fetchTasks = async () => {
-      try {
-        const data = await api.get('/tasks');
-        setTasks(Array.isArray(data) ? data : (data.tasks || []));
-      } catch (err) {
-        console.error('Failed to fetch tasks:', err);
+    fetchTasks();
+  }, [user?.id, user?.householdId]);
+
+  useEffect(() => {
+    const fetchHousehold = async () => {
+      if (user?.householdId) {
+        try {
+          const res = await fetch(`http://localhost:3000/api/households/${user.householdId}`);
+          const data = await res.json();
+          if (data.success && data.household) {
+            setGroups([data.household]);
+          }
+        } catch (err) {
+          console.error('Failed to fetch household:', err);
+        }
+      } else {
+        setGroups([]);
       }
     };
-    fetchTasks();
-  }, []);
+    fetchHousehold();
+  }, [user?.householdId]);
 
   // Date picker state
   const [pickerYear, setPickerYear] = useState(today.getFullYear());
@@ -66,6 +101,22 @@ function CalendarPage() {
   const nextMonth = () => {
     if (currentMonth === 11) { setCurrentMonth(0); setCurrentYear(y => y + 1); }
     else setCurrentMonth(m => m + 1);
+  };
+
+  const [isSyncing, setIsSyncing] = useState(false);
+  const handleSyncCalendar = async () => {
+    setIsSyncing(true);
+    try {
+      const res = await api.post('/calendar/sync', {});
+      if (res.success) {
+        // Refresh tasks
+        await fetchTasks();
+      }
+    } catch (err) {
+      console.error('Calendar sync failed:', err);
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   // Date picker search
@@ -108,49 +159,80 @@ function CalendarPage() {
   const handleSaveTask = async (taskData) => {
     try {
       const isNew = String(taskData.id).startsWith('task-');
+      const dueDate = new Date(`${taskData.date}T${taskData.startTime || '00:00'}:00`);
+      
       if (isNew) {
-        const { id, ...payload } = taskData;
-        const savedTask = await api.post('/tasks', payload);
-        setTasks(prev => [...prev, savedTask]);
+        await api.post('/tasks', {
+          title: taskData.title,
+          description: taskData.description,
+          householdId: user.householdId,
+          createdById: user.id,
+          assignedToId: user.id,
+          dueDate: dueDate.toISOString(),
+        });
       } else {
-        const savedTask = await api.put(`/tasks/${taskData.id}`, taskData);
-        setTasks(prev => prev.map(t => t.id === taskData.id ? savedTask : t));
+        await api.put(`/tasks/${taskData.id}`, {
+          title: taskData.title,
+          description: taskData.description,
+          dueDate: dueDate.toISOString(),
+        });
       }
+      await fetchTasks();
     } catch (err) {
       console.error('Failed to save task:', err);
     }
   };
 
-  const handleDeleteTask = (taskId) => {
-    setTasks(prev => prev.filter(t => t.id !== taskId));
+  const handleDeleteTask = async (taskId) => {
+    try {
+      await api.delete(`/tasks/${taskId}`);
+      setTasks(prev => prev.filter(t => t.id !== taskId));
+    } catch (err) {
+      console.error('Failed to delete task:', err);
+    }
   };
 
-  const handleToggleDone = (taskId) => {
-    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, done: !t.done } : t));
+  const handleToggleDone = async (taskId) => {
+    try {
+      const task = tasks.find(t => t.id === taskId);
+      if (task) {
+        if (!task.done) {
+          await api.patch(`/tasks/${taskId}/complete`, { userId: user.id });
+        } else {
+          // If un-toggling done, backend needs a PUT to reset status
+          await api.put(`/tasks/${taskId}`, { status: 'IN_PROGRESS' });
+        }
+        await fetchTasks();
+      }
+    } catch (err) {
+      console.error('Failed to toggle task done:', err);
+    }
   };
 
-  const handleSavePerm = (schedule) => {
-    const newTasks = [];
+  const handleSavePerm = async (schedule) => {
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
     for (let d = 1; d <= daysInMonth; d++) {
       const date = new Date(currentYear, currentMonth, d);
       const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
       if (schedule.days.includes(dayName)) {
         const dateStr = date.toISOString().split('T')[0];
-        newTasks.push({
-          id: `${schedule.id}-${dateStr}`,
-          title: schedule.title,
-          description: 'Permanent schedule',
-          date: dateStr,
-          startTime: schedule.startTime,
-          endTime: schedule.endTime,
-          color: schedule.color,
-          done: false,
-          isPermanent: true,
-        });
+        const dueDate = new Date(`${dateStr}T${schedule.startTime || '00:00'}:00`);
+        
+        try {
+          await api.post('/tasks', {
+            title: schedule.title,
+            description: 'Permanent schedule',
+            householdId: user.householdId,
+            createdById: user.id,
+            assignedToId: user.id,
+            dueDate: dueDate.toISOString(),
+          });
+        } catch (err) {
+          console.error('Failed to save permanent task:', err);
+        }
       }
     }
-    setTasks(prev => [...prev, ...newTasks]);
+    await fetchTasks();
   };
 
   const handleCreateGroup = async (group) => {
@@ -162,7 +244,11 @@ function CalendarPage() {
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        setGroups(prev => [...prev, data.household]);
+        const newGroup = data.household;
+        if (!newGroup.members) {
+          newGroup.members = [{ id: user.id }];
+        }
+        setGroups([newGroup]); // Since user can only have one household, replace prev
         setCreateGroupModal(false);
       }
     } catch (err) {
@@ -179,7 +265,9 @@ function CalendarPage() {
     return tasks.filter(t => t.date === selectedDay.date);
   }, [selectedDay, tasks]);
 
-  const initials = user ? `${(user.firstName || 'A').charAt(0)}${(user.lastName || 'P').charAt(0)}` : 'AP';
+  const nameStr = user?.name || 'Alex Popescu';
+  const nameParts = nameStr.split(' ');
+  const initials = `${nameParts[0]?.[0] || ''}${nameParts[1]?.[0] || ''}`.toUpperCase() || 'AP';
 
   // Close menus on outside click
   useEffect(() => {
@@ -239,6 +327,9 @@ function CalendarPage() {
         <button className="calendar-page__nav-btn" onClick={nextMonth}>›</button>
         <button className="calendar-page__perm-btn" onClick={() => setPermModal(true)}>
           + Permanent Schedule
+        </button>
+        <button className="calendar-page__perm-btn" onClick={handleSyncCalendar} disabled={isSyncing}>
+          {isSyncing ? '🔄 Syncing...' : '🔄 Sync Calendar'}
         </button>
       </div>
 

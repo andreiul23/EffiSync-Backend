@@ -27,6 +27,18 @@ function JoinHousehold() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to create household');
       login({ ...user, householdId: data.household.id });
+      try {
+        await fetch('http://localhost:3000/api/calendar/sync', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('effisync_jwt') || localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({})
+        });
+      } catch (e) {
+        console.error('Post-join sync failed', e);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -47,6 +59,18 @@ function JoinHousehold() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Invalid invite code');
       login({ ...user, householdId: data.householdId });
+      try {
+        await fetch('http://localhost:3000/api/calendar/sync', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('effisync_jwt') || localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({})
+        });
+      } catch (e) {
+        console.error('Post-join sync failed', e);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
