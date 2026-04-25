@@ -6,8 +6,8 @@ import { chatRoutes } from "./routes/chat.js";
 import { authRoutes } from "./routes/auth.js";
 import { taskRoutes } from "./routes/tasks.js";
 import { prisma } from "./lib/prisma.js";
-
-
+import { debugRoutes } from "./routes/debug.js";
+import { startCronJobs } from "./services/cron.service.js";
 /**
  * Bootstrap the Fastify server.
  */
@@ -64,9 +64,13 @@ async function main() {
   await app.register(chatRoutes, { prefix: "/api" });
   await app.register(authRoutes, { prefix: "/auth" });
   await app.register(taskRoutes, { prefix: "/api" });
+  await app.register(debugRoutes, { prefix: "/api/debug" });
 
   await app.ready();
   app.log.info(app.printRoutes({ commonPrefix: false }));
+
+  // Start background jobs
+  startCronJobs();
 
   // ── Graceful Shutdown ───────────────────────────────────
   const signals: NodeJS.Signals[] = ["SIGINT", "SIGTERM"];
