@@ -2,7 +2,7 @@
 // @effisync/shared — Type Definitions
 // ──────────────────────────────────────────────────────────
 
-// ─── Enums ──────────────────────────────────────────────
+// ─── Enumsl ──────────────────────────────────────────────
 
 export declare const TaskStatus: {
   readonly PENDING: 'PENDING';
