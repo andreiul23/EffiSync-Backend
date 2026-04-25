@@ -28,12 +28,12 @@ export async function authRoutes(app: FastifyInstance) {
 
     try {
       const tokens = await getTokens(parsed.data.code);
-      
+
       // Set credentials to fetch user info
       oauth2Client.setCredentials(tokens);
       const oauth2 = google.oauth2({ auth: oauth2Client, version: "v2" });
       const userInfoRes = await oauth2.userinfo.get();
-      
+
       const email = userInfoRes.data.email;
       const name = userInfoRes.data.name;
 
@@ -61,8 +61,8 @@ export async function authRoutes(app: FastifyInstance) {
       const htmlBody = `Salut ${user.name || "User"}, sunt Secretara ta EffiSync. Contul tău a fost configurat cu succes folosind acest cont de Google. De acum, te voi ajuta să îți gestionezi task-urile și casa direct de aici!`;
       sendRealEmailViaGmail(user.id, user.email, subject, htmlBody);
 
-      return reply.send({ 
-        success: true, 
+      return reply.send({
+        success: true,
         message: "Google account connected successfully.",
         userId: user.id
       });
@@ -80,7 +80,7 @@ export async function authRoutes(app: FastifyInstance) {
     });
     const parsed = registerSchema.safeParse(request.body);
     if (!parsed.success) return reply.status(400).send({ error: "Invalid input", details: parsed.error.flatten().fieldErrors });
-    
+
     const { email, password, name } = parsed.data;
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -105,7 +105,7 @@ export async function authRoutes(app: FastifyInstance) {
     });
     const parsed = loginSchema.safeParse(request.body);
     if (!parsed.success) return reply.status(400).send({ error: "Invalid input" });
-    
+
     const { email, password } = parsed.data;
 
     const user = await prisma.user.findUnique({ where: { email } });

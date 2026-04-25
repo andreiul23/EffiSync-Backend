@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.64",
+    "@effisync/shared": "workspace:*",
     "@fastify/cors": "^11.0.1",
     "@prisma/client": "^6.6.0",
     "ai": "^6.0.168",
@@ -26,13 +27,14 @@
     "fastify": "^5.3.3",
     "google-auth-library": "^10.6.2",
     "googleapis": "^171.4.0",
-    "nodemailer": "^8.0.6",
+    "jsonwebtoken": "^9.0.3",
     "node-cron": "^3.0.3",
-    "zod": "^3.24.4",
-    "@effisync/shared": "workspace:*"
+    "nodemailer": "^8.0.6",
+    "zod": "^3.24.4"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.15.3",
     "@types/node-cron": "^3.0.11",
     "@types/nodemailer": "^8.0.0",
