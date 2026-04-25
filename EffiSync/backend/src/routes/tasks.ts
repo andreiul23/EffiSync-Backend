@@ -59,11 +59,12 @@ export async function taskRoutes(app: FastifyInstance) {
     const querySchema = z.object({
       userId: z.string().uuid().optional(),
       householdId: z.string().uuid().optional(),
+      type: z.enum(["INDIVIDUAL", "GROUP"]).optional(),
     });
     const parsed = querySchema.safeParse(request.query);
     if (!parsed.success) return reply.status(400).send({ error: "Invalid query" });
 
-    const { userId, householdId } = parsed.data;
+    const { userId, householdId, type } = parsed.data;
 
     if (!userId && !householdId) {
       return reply.status(400).send({ error: "At least one of userId or householdId is required" });
@@ -72,10 +73,14 @@ export async function taskRoutes(app: FastifyInstance) {
     try {
       const tasks = await prisma.task.findMany({
         where: {
+          ...(type ? { type } : {}),
           OR: [
             userId ? { assignedToId: userId } : {},
             householdId ? { householdId } : {},
           ].filter(x => Object.keys(x).length > 0)
+        },
+        include: {
+          assignedTo: { select: { id: true, name: true } }
         }
       });
       return reply.send({ success: true, tasks });
@@ -202,6 +207,7 @@ export async function taskRoutes(app: FastifyInstance) {
         const t = await tx.task.update({
           where: { id },
           data: { status: "COMPLETED" },
+          include: { assignedTo: { select: { id: true, name: true } } }
         });
         await tx.user.update({
           where: { id: userId },

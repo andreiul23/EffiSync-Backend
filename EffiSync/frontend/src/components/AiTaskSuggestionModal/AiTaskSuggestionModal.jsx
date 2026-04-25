@@ -11,10 +11,31 @@ const TIME_OPTIONS = [
 
 function AiTaskSuggestionModal({ isOpen, onClose, task, userPoints, onAccept, onRefuse }) {
   const [editedTime, setEditedTime] = useState('');
+  const [loadingTime, setLoadingTime] = useState(false);
 
   useEffect(() => {
     if (task) {
-      setEditedTime(task.aiSuggestedTime || '09:00 - 10:00');
+      if (task.dueDate) {
+        const d = new Date(task.dueDate);
+        const startStr = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+        const endD = new Date(d.getTime() + (task.duration || 60) * 60000);
+        const endStr = `${String(endD.getHours()).padStart(2,'0')}:${String(endD.getMinutes()).padStart(2,'0')}`;
+        setEditedTime(`${startStr} - ${endStr}`);
+      } else {
+        // Fetch suggested time based on group calendar!
+        setLoadingTime(true);
+        fetch(`http://localhost:3000/api/households/${task.householdId}/suggest-time`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.success && data.suggestedTime) {
+              setEditedTime(data.suggestedTime);
+            } else {
+              setEditedTime('09:00 - 10:00');
+            }
+          })
+          .catch(() => setEditedTime('09:00 - 10:00'))
+          .finally(() => setLoadingTime(false));
+      }
     }
   }, [task]);
 
@@ -60,7 +81,7 @@ function AiTaskSuggestionModal({ isOpen, onClose, task, userPoints, onAccept, on
                 value={editedTime}
                 onChange={setEditedTime}
                 options={options}
-                placeholder="Select time"
+                placeholder={loadingTime ? "Calculating..." : "Select time"}
               />
             </div>
           </div>

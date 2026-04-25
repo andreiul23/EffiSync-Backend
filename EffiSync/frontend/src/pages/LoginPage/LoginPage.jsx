@@ -50,6 +50,10 @@ function LoginPage() {
     window.location.href = 'http://localhost:3000/api/auth/google';
   };
 
+  const handleGithubLogin = () => {
+    window.location.href = 'http://localhost:3000/api/auth/github';
+  };
+
   return (
     <div className="login-page">
       <div className="login-page__aurora-bg">
@@ -60,8 +64,7 @@ function LoginPage() {
         <AuthCard title="Welcome back" subtitle="Log in to continue to EffiSync">
           <div className="login-page__socials">
             <SocialButton provider="google" onClick={handleGoogleLogin} />
-            <SocialButton provider="apple" onClick={() => {}} />
-            <SocialButton provider="github" onClick={() => {}} />
+            <SocialButton provider="github" onClick={handleGithubLogin} />
           </div>
 
           <div className="login-page__divider">

@@ -12,40 +12,42 @@ function GroupCalendar({ groupTasks = [], members = [] }) {
     const currentDayOfWeek = (today.getDay() + 6) % 7; // Monday = 0
 
     return groupTasks
-      .filter(t => t.aiSuggestedTime || (t.assignedTo && t.status !== 'done'))
+      .filter(t => t.status !== 'COMPLETED')
       .map(task => {
         // Determine which day column to show the task
         let dayIdx = 0;
-        if (task.date) {
-          const taskDate = new Date(task.date);
+        let startHour = 9;
+        let span = 1;
+
+        if (task.dueDate) {
+          const taskDate = new Date(task.dueDate);
           dayIdx = (taskDate.getDay() + 6) % 7;
+          startHour = taskDate.getHours() + (taskDate.getMinutes() / 60);
+          if (task.duration) {
+            span = Math.max(task.duration / 60, 0.5); // Min 30 mins
+          }
+        } else if (task.aiSuggestedTime) {
+          const timeStr = task.aiSuggestedTime;
+          const [startStr, endStr] = timeStr.split(' - ').map(s => s.trim());
+          startHour = parseInt(startStr.split(':')[0]) || 9;
+          const endHour = parseInt(endStr.split(':')[0]) || startHour + 1;
+          span = Math.max(endHour - startHour, 1);
         }
 
-        // Parse time
-        const timeStr = task.aiSuggestedTime || '09:00 - 10:00';
-        const [startStr, endStr] = timeStr.split(' - ').map(s => s.trim());
-        const startHour = parseInt(startStr.split(':')[0]) || 0;
-        const endHour = parseInt(endStr.split(':')[0]) || startHour + 1;
-        const span = Math.max(endHour - startHour, 1);
-
         // Get assignee name
-        const assignee = task.assignedTo
-          ? members.find(m => m.id === task.assignedTo)
-          : task.aiSuggestedTo
-            ? members.find(m => m.id === task.aiSuggestedTo)
-            : null;
+        const assigneeName = task.assignedTo?.name?.split(' ')[0] || 'Unassigned';
 
         const colors = ['#904399', '#5D0E66', '#F9C7FF', '#7B1FA2', '#B44BC7'];
-        const colorIdx = members.findIndex(m => m.id === (task.assignedTo || task.aiSuggestedTo));
+        const colorIdx = members.findIndex(m => m.id === task.assignedToId);
 
         return {
           title: task.title,
           description: task.description,
-          assigneeName: assignee?.name?.split(' ')[0] || 'Unassigned',
+          assigneeName,
           day: dayIdx,
           start: startHour,
           span,
-          color: colors[colorIdx % colors.length] || colors[0],
+          color: colors[colorIdx >= 0 ? colorIdx % colors.length : 0],
         };
       });
   }, [groupTasks, members]);

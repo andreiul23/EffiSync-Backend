@@ -59,6 +59,72 @@ export async function householdRoutes(app: FastifyInstance) {
     return reply.send({ success: true, householdId: household.id, householdName: household.name });
   });
 
+  // GET /api/households/:id/suggest-time — Auto-suggest a time
+  app.get("/households/:id/suggest-time", async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const { getHouseholdAvailability } = await import("../services/calendar.service.js");
+
+    const timeMin = new Date();
+    timeMin.setHours(8, 0, 0, 0); // Start at 8 AM
+    const timeMax = new Date();
+    timeMax.setHours(22, 0, 0, 0); // End at 10 PM
+
+    const availability = await getHouseholdAvailability(id, timeMin, timeMax);
+    
+    // Find a 1-hour slot where everyone is free
+    const allBusySlots: { start: Date, end: Date }[] = [];
+    for (const member of availability.members) {
+      for (const slot of member.busySlots) {
+        allBusySlots.push({ start: new Date(slot.start), end: new Date(slot.end) });
+      }
+    }
+
+    allBusySlots.sort((a, b) => a.start.getTime() - b.start.getTime());
+
+    const mergedSlots: { start: Date, end: Date }[] = [];
+    for (const slot of allBusySlots) {
+      if (mergedSlots.length === 0) {
+        mergedSlots.push(slot);
+      } else {
+        const last = mergedSlots[mergedSlots.length - 1];
+        if (slot.start.getTime() <= last.end.getTime()) {
+          last.end = new Date(Math.max(last.end.getTime(), slot.end.getTime()));
+        } else {
+          mergedSlots.push(slot);
+        }
+      }
+    }
+
+    let bestStart = new Date();
+    if (bestStart.getHours() < 8) bestStart.setHours(8, 0, 0, 0);
+    else {
+      bestStart.setMinutes(0, 0, 0);
+      bestStart.setHours(bestStart.getHours() + 1);
+    }
+
+    let suggestedTime = null;
+
+    while (bestStart.getTime() + 60 * 60 * 1000 <= timeMax.getTime()) {
+      const bestEnd = new Date(bestStart.getTime() + 60 * 60 * 1000);
+      const hasOverlap = mergedSlots.some(s => 
+        (bestStart.getTime() < s.end.getTime() && bestEnd.getTime() > s.start.getTime())
+      );
+      if (!hasOverlap) {
+        const startStr = bestStart.toTimeString().substring(0, 5);
+        const endStr = bestEnd.toTimeString().substring(0, 5);
+        suggestedTime = `${startStr} - ${endStr}`;
+        break;
+      }
+      bestStart.setHours(bestStart.getHours() + 1);
+    }
+
+    if (!suggestedTime) {
+      suggestedTime = '19:00 - 20:00'; // Fallback
+    }
+
+    return reply.send({ success: true, suggestedTime });
+  });
+
   // GET /api/households/:id — Get household details
   app.get("/households/:id", async (request, reply) => {
     const { id } = request.params as { id: string };

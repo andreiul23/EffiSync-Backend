@@ -9,6 +9,7 @@ import { prisma } from "./lib/prisma.js";
 import { debugRoutes } from "./routes/debug.js";
 import { aiRoutes } from "./routes/ai.js";
 import { householdRoutes } from "./routes/households.js";
+import { calendarRoutes } from "./routes/calendar.js";
 import { startCronJobs } from "./services/cron.service.js";
 /**
  * Bootstrap the Fastify server.
@@ -70,6 +71,7 @@ async function main() {
   await app.register(householdRoutes,{ prefix: "/api" });
   await app.register(debugRoutes,    { prefix: "/api/debug" });
 
+  await app.register(calendarRoutes, { prefix: "/api" });
   await app.ready();
   app.log.info(app.printRoutes({ commonPrefix: false }));
 
