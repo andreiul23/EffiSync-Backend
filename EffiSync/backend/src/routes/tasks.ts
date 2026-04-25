@@ -65,6 +65,10 @@ export async function taskRoutes(app: FastifyInstance) {
 
     const { userId, householdId } = parsed.data;
 
+    if (!userId && !householdId) {
+      return reply.status(400).send({ error: "At least one of userId or householdId is required" });
+    }
+
     try {
       const tasks = await prisma.task.findMany({
         where: {
@@ -176,6 +180,42 @@ export async function taskRoutes(app: FastifyInstance) {
       return reply.send({ success: true });
     } catch (err: unknown) {
       return reply.status(500).send({ error: "Failed to delete task" });
+    }
+  });
+
+  // ── Mark Task Complete (ownership verified) ───────────
+  app.patch("/tasks/:id/complete", async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const bodySchema = z.object({ userId: z.string().uuid() });
+    const parsed = bodySchema.safeParse(request.body);
+    if (!parsed.success) return reply.status(400).send({ error: "userId is required" });
+
+    const { userId } = parsed.data;
+
+    try {
+      const task = await prisma.task.findUnique({ where: { id } });
+      if (!task) return reply.status(404).send({ error: "Task not found" });
+      if (task.assignedToId !== userId) return reply.status(403).send({ error: "You can only complete tasks assigned to you" });
+      if (task.status === "COMPLETED") return reply.status(400).send({ error: "Task is already completed" });
+
+      const updatedTask = await prisma.$transaction(async (tx) => {
+        const t = await tx.task.update({
+          where: { id },
+          data: { status: "COMPLETED" },
+        });
+        await tx.user.update({
+          where: { id: userId },
+          data: { pointsBalance: { increment: t.pointsValue } },
+        });
+        await tx.pointsTransaction.create({
+          data: { userId, amount: t.pointsValue, reason: `Task completed: ${t.title}` },
+        });
+        return t;
+      });
+
+      return reply.send({ success: true, task: updatedTask });
+    } catch (err: unknown) {
+      return reply.status(500).send({ error: "Failed to complete task" });
     }
   });
 }

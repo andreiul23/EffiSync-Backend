@@ -1,0 +1,200 @@
+.calendar-page {
+  padding: 100px $space-xl $space-xl;
+  max-width: 1400px;
+  margin: 0 auto;
+
+  &__topbar {
+    display: flex;
+    align-items: center;
+    gap: $space-lg;
+    margin-bottom: $space-xl;
+
+    @include respond-to($bp-tablet) {
+      flex-wrap: wrap;
+    }
+  }
+
+  &__topbar-left, &__topbar-right {
+    flex-shrink: 0;
+  }
+
+  &__topbar-center {
+    flex: 1;
+  }
+
+  &__avatar {
+    width: 44px; height: 44px;
+    border-radius: $radius-round;
+    background: $gradient-accent;
+    @include flex-center();
+    color: $white-off;
+    font-weight: $fw-bold;
+    font-size: $fs-sm;
+    border: 2px solid $glass-border-strong;
+    cursor: pointer;
+    transition: all $transition-base;
+    &:hover {
+      transform: scale(1.08);
+      box-shadow: $shadow-glow;
+    }
+  }
+
+  &__date-picker {
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+    max-width: 500px;
+  }
+
+  &__picker-select {
+    @include input-base();
+    padding: $space-sm $space-md;
+    font-size: $fs-sm;
+    cursor: pointer;
+    appearance: auto;
+    min-width: 80px;
+  }
+
+  &__picker-btn {
+    @include button-primary();
+    padding: $space-sm $space-lg;
+    font-size: $fs-sm;
+    white-space: nowrap;
+  }
+
+  &__groups-btn {
+    @include button-primary();
+    padding: $space-sm $space-xl;
+    font-size: $fs-sm;
+  }
+
+  &__controls {
+    display: flex;
+    align-items: center;
+    gap: $space-md;
+    margin-bottom: $space-lg;
+    flex-wrap: wrap;
+  }
+
+  &__nav-btn {
+    width: 40px; height: 40px;
+    border-radius: $radius-round;
+    @include flex-center();
+    background: $bg-card;
+    border: 1px solid $glass-border;
+    color: $text-primary;
+    font-size: $fs-xl;
+    cursor: pointer;
+    transition: all $transition-base;
+    &:hover { background: $bg-card-hover; border-color: $purple; }
+  }
+
+  &__month {
+    font-family: $font-heading;
+    font-size: $fs-xl;
+    font-weight: $fw-bold;
+    min-width: 200px;
+    text-align: center;
+  }
+
+  &__perm-btn {
+    @include button-ghost();
+    padding: $space-sm $space-lg;
+    font-size: $fs-sm;
+    margin-left: auto;
+  }
+
+  &__content {
+    display: flex;
+    gap: $space-xl;
+
+    @include respond-to($bp-desktop) {
+      flex-direction: column;
+    }
+  }
+
+  &__grid-wrapper {
+    flex: 1;
+    min-width: 0;
+    transition: all $transition-base;
+
+    &--full {
+      flex: 1;
+    }
+  }
+
+  &__preview {
+    width: 340px;
+    flex-shrink: 0;
+    @include flex-column();
+    gap: $space-md;
+    animation: slideInFromRight 0.3s ease;
+
+    &--closing {
+      animation: slideOutToRight 0.3s ease forwards;
+    }
+
+    @include respond-to($bp-desktop) {
+      width: 100%;
+    }
+  }
+
+  &__task-list {
+    @include glass();
+    border-radius: $radius-lg;
+    padding: $space-md;
+
+    h4 {
+      font-size: $fs-sm;
+      font-weight: $fw-semibold;
+      color: $text-muted;
+      margin-bottom: $space-md;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+  }
+
+  &__task-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: $space-sm $space-md;
+    background: none;
+    border: none;
+    border-left: 3px solid $purple;
+    border-radius: 0 $radius-sm $radius-sm 0;
+    color: $text-primary;
+    font-size: $fs-sm;
+    cursor: pointer;
+    margin-bottom: $space-xs;
+    transition: background $transition-fast;
+    text-align: left;
+    &:hover { background: rgba(255,255,255,0.04); }
+  }
+
+  &__task-done { text-decoration: line-through; opacity: 0.5; }
+  &__task-time { font-size: $fs-xs; color: $text-muted; }
+}
+
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutToRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}

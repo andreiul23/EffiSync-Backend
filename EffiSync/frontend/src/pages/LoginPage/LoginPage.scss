@@ -1,0 +1,115 @@
+.login-page {
+  min-height: 100vh;
+  @include flex-center();
+  position: relative;
+
+  &__aurora-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  &__back-btn {
+    position: absolute;
+    top: $space-xl;
+    left: $space-xl;
+    z-index: 10;
+    @include button-ghost();
+    padding: $space-sm $space-lg;
+    font-size: $fs-sm;
+    text-decoration: none;
+  }
+
+  &__container {
+    @include flex-center();
+    width: 100%;
+    padding: $space-xl;
+    position: relative;
+    z-index: 1;
+  }
+
+  &__socials {
+    @include flex-column();
+    gap: $space-sm;
+  }
+
+  &__divider {
+    display: flex;
+    align-items: center;
+    gap: $space-md;
+    margin: $space-sm 0;
+
+    &::before,
+    &::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: $glass-border;
+    }
+
+    span {
+      font-size: $fs-xs;
+      color: $text-muted;
+      white-space: nowrap;
+    }
+  }
+
+  &__form {
+    @include flex-column();
+    gap: $space-md;
+  }
+
+  &__field {
+    @include flex-column();
+    gap: $space-xs;
+  }
+
+  &__label {
+    font-size: $fs-sm;
+    font-weight: $fw-medium;
+    color: $text-secondary;
+  }
+
+  &__input {
+    @include input-base();
+
+    &--error {
+      border-color: #e74c3c;
+      box-shadow: 0 0 0 3px rgba(#e74c3c, 0.15);
+    }
+  }
+
+  &__error {
+    font-size: $fs-xs;
+    color: #e74c3c;
+    margin-top: 2px;
+  }
+
+  &__submit {
+    @include button-primary();
+    width: 100%;
+    padding: $space-md;
+    font-size: $fs-md;
+    font-weight: $fw-bold;
+    letter-spacing: 1px;
+    margin-top: $space-sm;
+  }
+
+  &__footer-text {
+    text-align: center;
+    font-size: $fs-sm;
+    color: $text-muted;
+    margin-top: $space-sm;
+  }
+
+  &__link {
+    color: $primary-light;
+    font-weight: $fw-semibold;
+
+    &:hover {
+      color: $purple;
+      text-decoration: underline;
+    }
+  }
+}

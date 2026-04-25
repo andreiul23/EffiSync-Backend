@@ -1,0 +1,97 @@
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
+
+  &__blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(120px);
+    opacity: 0.5;
+    transition: transform 0.3s ease-out;
+
+    &--1 {
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, $purple-deep, transparent 70%);
+      top: -10%;
+      left: -5%;
+      animation: blobFloat1 20s ease-in-out infinite;
+    }
+
+    &--2 {
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, $purple, transparent 70%);
+      top: 20%;
+      right: -10%;
+      animation: blobFloat2 25s ease-in-out infinite;
+    }
+
+    &--3 {
+      width: 450px;
+      height: 450px;
+      background: radial-gradient(circle, rgba($pink-light, 0.6), transparent 70%);
+      bottom: -5%;
+      left: 30%;
+      animation: blobFloat3 22s ease-in-out infinite;
+    }
+
+    &--4 {
+      width: 350px;
+      height: 350px;
+      background: radial-gradient(circle, rgba($purple, 0.4), transparent 70%);
+      top: 50%;
+      left: 60%;
+      animation: blobFloat1 18s ease-in-out infinite reverse;
+    }
+  }
+
+  &__grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, black 40%, transparent 100%);
+    -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, black 40%, transparent 100%);
+  }
+}
+
+@keyframes blobFloat1 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  25% {
+    transform: translate(40px, -30px) scale(1.05);
+  }
+  50% {
+    transform: translate(-20px, 40px) scale(0.95);
+  }
+  75% {
+    transform: translate(30px, 20px) scale(1.02);
+  }
+}
+
+@keyframes blobFloat2 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(-50px, 30px) scale(1.08);
+  }
+  66% {
+    transform: translate(30px, -40px) scale(0.92);
+  }
+}
+
+@keyframes blobFloat3 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(40px, -50px) scale(1.1);
+  }
+}

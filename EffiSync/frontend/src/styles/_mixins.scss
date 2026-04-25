@@ -1,0 +1,240 @@
+// ============================
+// EffiSync Reusable Mixins
+// ============================
+
+@mixin glass($bg: $glass-bg, $blur: 20px, $border: $glass-border) {
+  background: $bg;
+  backdrop-filter: blur($blur);
+  -webkit-backdrop-filter: blur($blur);
+  border: 1px solid $border;
+}
+
+@mixin glass-strong() {
+  @include glass($glass-bg-strong, 24px, $glass-border-strong);
+}
+
+@mixin card-base() {
+  background: $bg-card;
+  border-radius: $radius-lg;
+  border: 1px solid $glass-border;
+  transition: all $transition-base;
+}
+
+@mixin card-hover() {
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: $shadow-lg;
+    border-color: $glass-border-strong;
+    background: $bg-card-hover;
+  }
+}
+
+@mixin gradient-text($gradient: $gradient-primary) {
+  background: $gradient;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+@mixin glow-border($color: $purple, $size: 1px) {
+  border: $size solid rgba($color, 0.4);
+  box-shadow: 0 0 20px rgba($color, 0.15),
+              inset 0 0 20px rgba($color, 0.05);
+}
+
+@mixin flex-center() {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-between() {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@mixin flex-column() {
+  display: flex;
+  flex-direction: column;
+}
+
+@mixin section-padding() {
+  padding: $space-4xl $space-xl;
+  max-width: 1280px;
+  margin: 0 auto;
+
+  @media (max-width: $bp-tablet) {
+    padding: $space-3xl $space-md;
+  }
+}
+
+@mixin button-base() {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: $space-sm;
+  padding: $space-md $space-xl;
+  border: none;
+  border-radius: $radius-pill;
+  font-family: $font-body;
+  font-weight: $fw-semibold;
+  font-size: $fs-base;
+  cursor: pointer;
+  transition: all $transition-base;
+  text-decoration: none;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+@mixin button-primary() {
+  @include button-base();
+  background: $gradient-accent;
+  color: $white-off;
+  box-shadow: $shadow-md, 0 0 20px rgba($purple, 0.2);
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: $shadow-lg, $shadow-glow;
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+}
+
+@mixin button-ghost() {
+  @include button-base();
+  background: transparent;
+  color: $text-primary;
+  border: 1px solid $glass-border-strong;
+
+  &:hover:not(:disabled) {
+    background: $glass-bg-strong;
+    border-color: rgba($purple, 0.4);
+  }
+}
+
+@mixin input-base() {
+  width: 100%;
+  padding: $space-md $space-lg;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid $glass-border;
+  border-radius: $radius-md;
+  color: $text-primary;
+  font-family: $font-body;
+  font-size: $fs-base;
+  transition: all $transition-base;
+  outline: none;
+
+  &::placeholder {
+    color: $text-muted;
+  }
+
+  &:focus {
+    border-color: $purple;
+    box-shadow: 0 0 0 3px rgba($purple, 0.15);
+    background: rgba(255, 255, 255, 0.06);
+  }
+}
+
+@mixin scrollbar-custom() {
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba($purple, 0.3);
+    border-radius: 3px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: rgba($purple, 0.5);
+  }
+}
+
+@mixin modal-overlay() {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: $z-modal-bg;
+  @include flex-center();
+}
+
+@mixin modal-content() {
+  background: $bg-card;
+  border-radius: $radius-xl;
+  border: 1px solid $glass-border-strong;
+  box-shadow: $shadow-xl;
+  padding: $space-xl;
+  position: relative;
+  z-index: $z-modal;
+  animation: modalIn 0.3s ease forwards;
+}
+
+@mixin respond-to($breakpoint) {
+  @media (max-width: $breakpoint) {
+    @content;
+  }
+}
+
+// Animations
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba($purple, 0.3); }
+  50% { box-shadow: 0 0 40px rgba($purple, 0.6); }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

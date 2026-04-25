@@ -1,0 +1,135 @@
+.task-modal {
+  &__overlay {
+    @include modal-overlay();
+  }
+
+  @include modal-content();
+  width: 100%;
+  max-width: 480px;
+
+  &__header {
+    @include flex-between();
+    margin-bottom: $space-lg;
+  }
+
+  &__title {
+    font-family: $font-heading;
+    font-size: $fs-lg;
+    font-weight: $fw-bold;
+  }
+
+  &__close {
+    background: none;
+    border: none;
+    color: $text-muted;
+    font-size: $fs-2xl;
+    cursor: pointer;
+    line-height: 1;
+    &:hover { color: $text-primary; }
+  }
+
+  &__form {
+    @include flex-column();
+    gap: $space-md;
+  }
+
+  &__field {
+    @include flex-column();
+    gap: $space-xs;
+  }
+
+  &__label {
+    font-size: $fs-xs;
+    font-weight: $fw-medium;
+    color: $text-muted;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  &__input {
+    @include input-base();
+    &--title {
+      font-size: $fs-lg;
+      font-weight: $fw-semibold;
+      padding: $space-md 0;
+      border: none;
+      border-bottom: 2px solid $glass-border;
+      border-radius: 0;
+      background: transparent;
+      &:focus {
+        border-color: $purple;
+        box-shadow: none;
+      }
+    }
+  }
+
+  &__textarea {
+    @include input-base();
+    resize: vertical;
+    min-height: 60px;
+  }
+
+  &__row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $space-md;
+  }
+
+  &__colors {
+    display: flex;
+    gap: $space-sm;
+  }
+
+  &__color {
+    width: 28px;
+    height: 28px;
+    border-radius: $radius-round;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all $transition-fast;
+    &:hover { transform: scale(1.15); }
+    &--active {
+      border-color: $white-off;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+      transform: scale(1.15);
+    }
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+    padding-top: $space-md;
+    border-top: 1px solid $glass-border;
+    flex-wrap: wrap;
+  }
+
+  &__actions-right {
+    display: flex;
+    gap: $space-sm;
+    margin-left: auto;
+  }
+
+  &__btn {
+    @include button-base();
+    padding: $space-sm $space-lg;
+    font-size: $fs-sm;
+    &--primary {
+      background: $gradient-accent;
+      color: $white-off;
+      &:hover { box-shadow: $shadow-glow; transform: translateY(-1px); }
+    }
+    &--ghost {
+      background: transparent;
+      color: $text-secondary;
+      border: 1px solid $glass-border;
+      &:hover { background: $glass-bg; color: $text-primary; }
+    }
+    &--danger {
+      background: transparent;
+      color: #e74c3c;
+      border: 1px solid rgba(#e74c3c, 0.3);
+      &:hover { background: rgba(#e74c3c, 0.1); }
+    }
+  }
+}

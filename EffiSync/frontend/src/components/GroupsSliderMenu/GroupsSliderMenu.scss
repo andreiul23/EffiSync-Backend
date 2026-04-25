@@ -1,0 +1,85 @@
+.slider-menu {
+  position: fixed;
+  top: 0; right: 0;
+  width: 360px; height: 100vh;
+  background: $bg-surface;
+  border-left: 1px solid $glass-border;
+  z-index: $z-modal;
+  transform: translateX(100%);
+  transition: transform $transition-base;
+  @include flex-column();
+  box-shadow: -8px 0 32px rgba(0,0,0,0.4);
+
+  &--open { transform: translateX(0); }
+
+  &__backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: $z-modal-bg;
+  }
+
+  &__header {
+    @include flex-between();
+    padding: $space-xl;
+    border-bottom: 1px solid $glass-border;
+    h3 { font-family: $font-heading; font-size: $fs-lg; font-weight: $fw-bold; }
+  }
+
+  &__close {
+    background: none; border: none; color: $text-muted;
+    font-size: $fs-2xl; cursor: pointer; line-height: 1;
+    &:hover { color: $text-primary; }
+  }
+
+  &__list {
+    flex: 1; overflow-y: auto; @include scrollbar-custom();
+    padding: $space-md;
+    @include flex-column();
+    gap: $space-sm;
+  }
+
+  &__group {
+    display: flex; align-items: center; gap: $space-md;
+    padding: $space-md;
+    border-radius: $radius-md;
+    background: $bg-card;
+    border: 1px solid transparent;
+    transition: all $transition-base;
+    text-decoration: none; color: $text-primary;
+    &:hover { background: $bg-card-hover; border-color: $glass-border-strong; }
+    &-avatar {
+      width: 40px; height: 40px; border-radius: $radius-round;
+      background: $gradient-accent; @include flex-center();
+      font-weight: $fw-bold; font-size: $fs-md; color: $white-off; flex-shrink: 0;
+    }
+    &-info { @include flex-column(); flex: 1; }
+    &-name { font-weight: $fw-semibold; font-size: $fs-sm; }
+    &-type { font-size: $fs-xs; color: $text-muted; }
+    &-members { font-size: $fs-xs; color: $text-muted; flex-shrink: 0; }
+  }
+
+  &__actions {
+    padding: $space-lg;
+    border-top: 1px solid $glass-border;
+    @include flex-column();
+    gap: $space-sm;
+  }
+
+  &__btn {
+    @include button-base();
+    width: 100%; padding: $space-md; font-size: $fs-sm;
+    &--create {
+      background: $gradient-accent; color: $white-off;
+      &:hover { box-shadow: $shadow-glow; transform: translateY(-1px); }
+      span { font-size: $fs-lg; }
+    }
+    &--join {
+      background: transparent; color: $text-secondary; border: 1px solid $glass-border;
+      &:hover { background: $glass-bg; color: $text-primary; }
+    }
+  }
+
+  @include respond-to($bp-mobile) {
+    width: 100%;
+  }
+}

@@ -1,0 +1,61 @@
+.ai-suggest {
+  &__overlay { @include modal-overlay(); }
+  @include modal-content();
+  width: 100%; max-width: 460px;
+
+  &__header {
+    @include flex-between(); margin-bottom: $space-lg;
+  }
+  &__badge {
+    font-size: $fs-sm; font-weight: $fw-bold; color: $purple;
+    background: rgba($purple, 0.12); padding: $space-xs $space-md;
+    border-radius: $radius-pill;
+  }
+  &__close {
+    background: none; border: none; color: $text-muted;
+    font-size: $fs-2xl; cursor: pointer; line-height: 1;
+    &:hover { color: $text-primary; }
+  }
+
+  &__body { @include flex-column(); gap: $space-md; margin-bottom: $space-xl; }
+  &__task-name {
+    font-family: $font-heading; font-size: $fs-xl; font-weight: $fw-bold;
+  }
+  &__desc { font-size: $fs-sm; color: $text-secondary; line-height: 1.6; }
+
+  &__info {
+    @include flex-column(); gap: $space-sm;
+    padding: $space-md; background: rgba(255,255,255,0.03);
+    border-radius: $radius-md; border: 1px solid $glass-border;
+  }
+  &__info-item {
+    @include flex-between();
+  }
+  &__info-label { font-size: $fs-sm; color: $text-muted; }
+  &__info-value {
+    font-size: $fs-sm; font-weight: $fw-semibold; color: $text-primary;
+    &--highlight { @include gradient-text($gradient-primary); font-size: $fs-md; }
+  }
+  &__time-input {
+    @include input-base();
+    padding: $space-xs $space-sm;
+    font-size: $fs-sm;
+    max-width: 180px;
+    text-align: right;
+  }
+
+  &__actions {
+    display: flex; gap: $space-md;
+  }
+  &__btn {
+    @include button-base(); flex: 1; padding: $space-md; font-size: $fs-sm;
+    &--refuse {
+      background: transparent; color: $text-secondary; border: 1px solid $glass-border;
+      &:hover { color: #e74c3c; border-color: rgba(#e74c3c, 0.3); background: rgba(#e74c3c, 0.05); }
+    }
+    &--accept {
+      background: $gradient-accent; color: $white-off;
+      &:hover { box-shadow: $shadow-glow; transform: translateY(-1px); }
+    }
+  }
+}

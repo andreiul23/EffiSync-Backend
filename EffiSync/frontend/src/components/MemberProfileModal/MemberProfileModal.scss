@@ -1,0 +1,112 @@
+.member-profile {
+  &__overlay {
+    @include modal-overlay();
+  }
+
+  @include modal-content();
+  width: 90%;
+  max-width: 480px;
+
+  &__header {
+    @include flex-between();
+    margin-bottom: $space-lg;
+  }
+
+  &__close {
+    background: none;
+    border: none;
+    color: $text-muted;
+    font-size: $fs-xl;
+    cursor: pointer;
+    transition: color $transition-fast;
+    line-height: 1;
+    &:hover { color: $text-primary; }
+  }
+
+  &__info {
+    display: flex;
+    align-items: center;
+    gap: $space-lg;
+    margin-bottom: $space-xl;
+    padding: $space-lg;
+    background: $bg-card;
+    border-radius: $radius-lg;
+  }
+
+  &__avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: $radius-round;
+    background: $gradient-accent;
+    @include flex-center();
+    font-weight: $fw-bold;
+    font-size: $fs-lg;
+    color: $white-off;
+    flex-shrink: 0;
+  }
+
+  &__details {
+    @include flex-column();
+  }
+
+  &__name {
+    font-size: $fs-md;
+    font-weight: $fw-semibold;
+    color: $text-primary;
+  }
+
+  &__role {
+    font-size: $fs-sm;
+    color: $text-muted;
+  }
+
+  &__schedule {
+    &-title {
+      font-size: $fs-sm;
+      font-weight: $fw-semibold;
+      color: $text-muted;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: $space-md;
+      padding-bottom: $space-sm;
+      border-bottom: 1px solid $glass-border;
+    }
+
+    &-list {
+      @include flex-column();
+      gap: $space-sm;
+      max-height: 300px;
+      overflow-y: auto;
+      @include scrollbar-custom();
+    }
+
+    &-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: $space-sm $space-md;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: $radius-md;
+      border-left: 3px solid $purple;
+    }
+
+    &-day {
+      font-weight: $fw-semibold;
+      font-size: $fs-sm;
+      color: $text-primary;
+      min-width: 100px;
+    }
+
+    &-time {
+      font-size: $fs-sm;
+      color: $primary-light;
+    }
+  }
+
+  &__empty {
+    font-size: $fs-sm;
+    color: $text-muted;
+    text-align: center;
+    padding: $space-xl;
+  }
+}

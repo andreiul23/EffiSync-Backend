@@ -1,0 +1,87 @@
+@import '../../styles/variables';
+@import '../../styles/mixins';
+
+.custom-dropdown {
+  position: relative;
+  min-width: 120px;
+  user-select: none;
+
+  &__control {
+    @include glass();
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: $space-sm $space-md;
+    border-radius: $radius-md;
+    cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all $transition-base;
+    font-size: $fs-sm;
+    color: $text-primary;
+
+    &:hover {
+      border-color: rgba($purple, 0.5);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    &--open {
+      border-color: $purple;
+      background: rgba(255, 255, 255, 0.1);
+      box-shadow: 0 0 10px rgba($purple, 0.2);
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+      
+      .custom-dropdown__arrow {
+        transform: rotate(180deg);
+      }
+    }
+  }
+
+  &__value {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__arrow {
+    margin-left: $space-sm;
+    transition: transform $transition-fast;
+    font-size: 10px;
+  }
+
+  &__menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: $bg-elevated;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: none;
+    border-bottom-left-radius: $radius-md;
+    border-bottom-right-radius: $radius-md;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: $z-dropdown;
+    box-shadow: $shadow-lg;
+    @include scrollbar-custom();
+  }
+
+  &__option {
+    padding: $space-sm $space-md;
+    font-size: $fs-sm;
+    color: $text-secondary;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+      background: rgba($purple, 0.2);
+      color: $text-primary;
+    }
+
+    &--selected {
+      background: rgba($purple, 0.3);
+      color: $text-primary;
+      font-weight: $fw-semibold;
+    }
+  }
+}

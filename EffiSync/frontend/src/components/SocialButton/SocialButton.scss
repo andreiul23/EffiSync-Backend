@@ -1,0 +1,28 @@
+.social-btn {
+  @include button-base();
+  width: 100%;
+  padding: $space-md;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid $glass-border;
+  color: $text-primary;
+  font-weight: $fw-medium;
+  border-radius: $radius-md;
+  gap: $space-md;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: $glass-border-strong;
+    transform: translateY(-1px);
+  }
+
+  &__icon {
+    @include flex-center();
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+
+  &__label {
+    font-size: $fs-sm;
+  }
+}

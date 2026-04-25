@@ -51,9 +51,8 @@ Return ONLY valid HTML. Do not use markdown code blocks (like \`\`\`html), just 
     });
 
     let htmlContent = result.text.trim();
-    if (htmlContent.startsWith("```html")) {
-      htmlContent = htmlContent.replace(/^```html/, "").replace(/```$/, "").trim();
-    }
+    // Strip markdown code fences if the AI wraps the HTML in them
+    htmlContent = htmlContent.replace(/^```(?:html)?\s*\n?/i, "").replace(/\n?\s*```\s*$/i, "").trim();
 
     const sender = members.find(m => m.googleRefreshToken !== null);
     if (!sender) {

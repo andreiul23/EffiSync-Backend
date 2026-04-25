@@ -1,0 +1,36 @@
+.member-card {
+  display: flex; align-items: center; gap: $space-md;
+  padding: $space-md;
+  background: $bg-card; border: 1px solid transparent;
+  border-radius: $radius-md;
+  transition: all $transition-base;
+
+  &:hover {
+    background: $bg-card-hover; border-color: $glass-border-strong;
+  }
+
+  &__avatar {
+    width: 40px; height: 40px;
+    border-radius: $radius-round;
+    background: $gradient-accent;
+    @include flex-center();
+    font-weight: $fw-bold; font-size: $fs-sm; color: $white-off;
+    flex-shrink: 0;
+  }
+
+  &__info {
+    @include flex-column(); flex: 1;
+  }
+
+  &__name {
+    font-size: $fs-sm; font-weight: $fw-semibold; color: $text-primary;
+  }
+
+  &__role {
+    font-size: $fs-xs; color: $text-muted;
+  }
+
+  &__hours {
+    font-size: $fs-xs; color: $primary-light; font-weight: $fw-medium; flex-shrink: 0;
+  }
+}

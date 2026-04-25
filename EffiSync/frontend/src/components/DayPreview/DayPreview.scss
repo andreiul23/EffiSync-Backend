@@ -1,0 +1,106 @@
+.day-preview {
+  @include glass-strong();
+  border-radius: $radius-lg;
+  padding: $space-lg;
+  width: 320px;
+  max-height: 500px;
+  overflow-y: auto;
+  @include scrollbar-custom();
+  box-shadow: $shadow-xl;
+  animation: modalIn 0.2s ease;
+
+  &__header {
+    @include flex-between();
+    margin-bottom: $space-md;
+    padding-bottom: $space-md;
+    border-bottom: 1px solid $glass-border;
+  }
+
+  &__title {
+    font-family: $font-heading;
+    font-size: $fs-md;
+    font-weight: $fw-semibold;
+    color: $text-primary;
+  }
+
+  &__close {
+    background: none;
+    border: none;
+    color: $text-muted;
+    font-size: $fs-xl;
+    cursor: pointer;
+    transition: color $transition-fast;
+    line-height: 1;
+
+    &:hover {
+      color: $text-primary;
+    }
+  }
+
+  &__hours {
+    @include flex-column();
+    gap: 1px;
+  }
+
+  &__hour {
+    display: flex;
+    align-items: stretch;
+    min-height: 36px;
+  }
+
+  &__time {
+    width: 50px;
+    font-size: $fs-xs;
+    color: $text-muted;
+    padding-top: $space-xs;
+    flex-shrink: 0;
+  }
+
+  &__slot {
+    flex: 1;
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
+    padding: $space-xs;
+    border-radius: $radius-sm;
+    transition: background $transition-fast;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    &--filled {
+      background: rgba($purple, 0.08);
+    }
+  }
+
+  &__task {
+    font-size: $fs-xs;
+    color: $text-primary;
+    padding: 2px $space-sm;
+    border-left: 3px solid $purple;
+    border-radius: 0 $radius-sm $radius-sm 0;
+  }
+
+  &__tasks-stack {
+    @include flex-column();
+    gap: 2px;
+  }
+
+  &__add-btn {
+    background: none;
+    border: none;
+    color: $text-muted;
+    font-size: 10px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity $transition-fast;
+    padding: 2px;
+
+    .day-preview__slot:hover & {
+      opacity: 1;
+    }
+
+    &:hover {
+      color: $primary-light;
+    }
+  }
+}

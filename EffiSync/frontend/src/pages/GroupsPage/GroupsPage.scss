@@ -1,0 +1,152 @@
+.groups-page {
+  padding: 100px $space-xl $space-xl;
+  max-width: 1400px;
+  margin: 0 auto;
+  position: relative;
+  min-height: 100vh;
+
+  &__header {
+    margin-bottom: $space-xl;
+    text-align: center;
+  }
+  &__title {
+    font-family: $font-heading; font-size: $fs-3xl; font-weight: $fw-bold;
+    @include gradient-text($gradient-primary);
+  }
+  &__subtitle { font-size: $fs-sm; color: $text-muted; }
+
+  &__content {
+    display: grid;
+    grid-template-columns: 280px 1fr 260px;
+    gap: $space-xl;
+    align-items: start;
+
+    @include respond-to($bp-desktop) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__sidebar {
+    @include glass();
+    border-radius: $radius-lg;
+    padding: $space-lg;
+
+    &--right {
+      @include flex-column(); gap: $space-xl;
+    }
+  }
+
+  &__main {
+    min-width: 0;
+  }
+
+  &__points {
+    @include glass-strong();
+    border-radius: $radius-lg;
+    padding: $space-lg;
+    text-align: center;
+    @include flex-column();
+    gap: $space-xs;
+
+    &-label { font-size: $fs-xs; color: $text-muted; text-transform: uppercase; letter-spacing: 1px; }
+    &-value {
+      font-family: $font-heading; font-size: $fs-3xl; font-weight: $fw-extrabold;
+      @include gradient-text($gradient-primary);
+    }
+  }
+
+  &__fab {
+    position: fixed;
+    bottom: $space-xl;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 56px; height: 56px;
+    border-radius: $radius-round;
+    background: $gradient-accent;
+    color: $white-off;
+    font-size: $fs-2xl;
+    border: none;
+    cursor: pointer;
+    box-shadow: $shadow-lg, $shadow-glow;
+    transition: all $transition-base;
+    z-index: $z-sticky;
+    @include flex-center();
+
+    &:hover {
+      transform: translateX(-50%) translateY(-4px) scale(1.1);
+      box-shadow: $shadow-xl, $shadow-glow-strong;
+    }
+  }
+
+  // ── My Tasks (completion strip) ──────────────────────────
+  &--loading {
+    @include flex-center(); flex-direction: column; gap: 1rem; min-height: 60vh;
+    color: rgba(255,255,255,0.5);
+  }
+
+  &__spinner {
+    width: 36px; height: 36px;
+    border: 3px solid rgba(168,85,247,0.3);
+    border-top-color: #a855f7;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  &__my-tasks {
+    margin-bottom: 1.5rem;
+    @include glass();
+    border-radius: $radius-lg;
+    padding: $space-lg;
+    border-left: 3px solid #a855f7;
+
+    &-title {
+      font-size: $fs-sm; font-weight: $fw-semibold; color: rgba(255,255,255,0.7);
+      margin-bottom: $space-md;
+    }
+
+    &-list { display: flex; flex-direction: column; gap: $space-sm; }
+  }
+
+  &__my-task-card {
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(255,255,255,0.04);
+    border-radius: $radius-md;
+    padding: $space-sm $space-md;
+    gap: $space-md;
+
+    strong { color: #fff; font-size: $fs-sm; }
+  }
+
+  &__my-task-pts {
+    margin-left: $space-sm;
+    font-size: $fs-xs;
+    color: #a855f7;
+    font-weight: $fw-semibold;
+  }
+
+  &__my-task-actions { display: flex; gap: $space-sm; }
+
+  &__btn-complete {
+    padding: 0.4rem 1rem;
+    background: linear-gradient(135deg, #a855f7, #7c3aed);
+    border: none; border-radius: $radius-sm;
+    color: #fff; font-size: $fs-xs; font-weight: $fw-semibold;
+    cursor: pointer; transition: opacity $transition-fast;
+    &:hover { opacity: 0.85; }
+    &:disabled { opacity: 0.4; cursor: not-allowed; }
+  }
+
+  &__btn-refuse {
+    padding: 0.4rem 1rem;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: $radius-sm;
+    color: rgba(255,255,255,0.6); font-size: $fs-xs; font-weight: $fw-semibold;
+    cursor: pointer; transition: all $transition-fast;
+    &:hover { background: rgba(255,70,70,0.15); border-color: rgba(255,70,70,0.4); color: #f87171; }
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

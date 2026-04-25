@@ -1,0 +1,112 @@
+.account-page {
+  padding: 120px $space-xl $space-xl;
+  @include flex-center();
+  min-height: 100vh;
+
+  &__card {
+    @include glass-strong();
+    border-radius: $radius-xl;
+    padding: $space-2xl;
+    width: 100%;
+    max-width: 600px;
+    @include flex-column();
+    align-items: center;
+    gap: $space-xl;
+    animation: slideUp 0.5s ease;
+  }
+
+  &__avatar {
+    width: 96px; height: 96px;
+    border-radius: $radius-round;
+    background: $gradient-accent;
+    @include flex-center();
+    font-family: $font-heading;
+    font-size: $fs-3xl;
+    font-weight: $fw-bold;
+    color: $white-off;
+    border: 3px solid $glass-border-strong;
+    box-shadow: $shadow-glow;
+  }
+
+  &__name {
+    font-family: $font-heading;
+    font-size: $fs-2xl;
+    font-weight: $fw-bold;
+    text-align: center;
+  }
+
+  &__email {
+    font-size: $fs-sm;
+    color: $text-muted;
+    margin-top: -$space-md;
+  }
+
+  &__section {
+    width: 100%;
+    &-title {
+      font-size: $fs-sm;
+      font-weight: $fw-semibold;
+      color: $text-muted;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: $space-md;
+      padding-bottom: $space-sm;
+      border-bottom: 1px solid $glass-border;
+    }
+  }
+
+  &__schedule {
+    @include flex-column();
+    gap: $space-sm;
+  }
+
+  &__schedule-item {
+    display: flex;
+    align-items: center;
+    gap: $space-lg;
+    padding: $space-sm $space-md;
+    background: $bg-card;
+    border-radius: $radius-md;
+    font-size: $fs-sm;
+  }
+
+  &__schedule-day {
+    font-weight: $fw-semibold;
+    min-width: 100px;
+    color: $text-primary;
+  }
+
+  &__schedule-time {
+    color: $primary-light;
+    min-width: 120px;
+  }
+
+  &__schedule-label {
+    color: $text-muted;
+  }
+
+  &__prefs {
+    @include flex-column();
+    gap: $space-sm;
+  }
+
+  &__pref {
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+    font-size: $fs-sm;
+    color: $text-secondary;
+  }
+
+  &__pref-dot {
+    color: $primary-light;
+    font-size: 8px;
+  }
+
+  &__back {
+    @include button-ghost();
+    margin-top: $space-md;
+    font-size: $fs-sm;
+    text-decoration: none;
+  }
+}

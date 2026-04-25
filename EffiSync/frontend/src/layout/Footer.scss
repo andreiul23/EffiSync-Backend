@@ -1,0 +1,78 @@
+.footer {
+  background: $bg-surface;
+  border-top: 1px solid $glass-border;
+  padding: $space-3xl $space-xl $space-xl;
+  margin-top: auto;
+
+  &__inner {
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  &__brand {
+    margin-bottom: $space-2xl;
+  }
+
+  &__logo {
+    font-family: $font-heading;
+    font-weight: $fw-bold;
+    font-size: $fs-xl;
+    @include gradient-text($gradient-primary);
+  }
+
+  &__tagline {
+    color: $text-muted;
+    font-size: $fs-sm;
+    margin-top: $space-xs;
+  }
+
+  &__links {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: $space-xl;
+    margin-bottom: $space-2xl;
+
+    @include respond-to($bp-mobile) {
+      grid-template-columns: 1fr;
+      gap: $space-lg;
+    }
+  }
+
+  &__col {
+    @include flex-column();
+    gap: $space-sm;
+
+    &-title {
+      font-family: $font-heading;
+      font-size: $fs-sm;
+      font-weight: $fw-semibold;
+      color: $text-primary;
+      margin-bottom: $space-xs;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+  }
+
+  &__link {
+    color: $text-muted;
+    font-size: $fs-sm;
+    transition: color $transition-fast;
+    cursor: pointer;
+    text-decoration: none;
+
+    &:hover {
+      color: $primary-light;
+    }
+  }
+
+  &__bottom {
+    border-top: 1px solid $glass-border;
+    padding-top: $space-lg;
+
+    p {
+      color: $text-muted;
+      font-size: $fs-xs;
+      text-align: center;
+    }
+  }
+}

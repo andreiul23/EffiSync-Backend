@@ -1,0 +1,103 @@
+.sub-card {
+  @include card-base();
+  padding: $space-xl;
+  @include flex-column();
+  gap: $space-lg;
+  position: relative;
+  overflow: hidden;
+  @include card-hover();
+
+  &--featured {
+    @include glow-border($purple, 2px);
+    background: linear-gradient(165deg, rgba($purple, 0.12), rgba($purple-deep, 0.06), $bg-card);
+    transform: scale(1.05);
+
+    &:hover {
+      transform: scale(1.08) translateY(-4px);
+    }
+
+    .sub-card__name {
+      @include gradient-text($gradient-primary);
+    }
+  }
+
+  &__badge {
+    position: absolute;
+    top: $space-md;
+    right: -30px;
+    background: $gradient-accent;
+    color: $white-off;
+    font-size: $fs-xs;
+    font-weight: $fw-bold;
+    padding: $space-xs $space-2xl;
+    transform: rotate(35deg);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  &__header {
+    text-align: center;
+    padding-bottom: $space-lg;
+    border-bottom: 1px solid $glass-border;
+  }
+
+  &__name {
+    font-family: $font-heading;
+    font-size: $fs-xl;
+    font-weight: $fw-bold;
+    margin-bottom: $space-md;
+    color: $text-primary;
+  }
+
+  &__price {
+    @include flex-center();
+    gap: $space-xs;
+  }
+
+  &__amount {
+    font-family: $font-heading;
+    font-size: $fs-4xl;
+    font-weight: $fw-extrabold;
+    color: $text-primary;
+
+    @include respond-to($bp-tablet) {
+      font-size: $fs-3xl;
+    }
+  }
+
+  &__period {
+    font-size: $fs-sm;
+    color: $text-muted;
+  }
+
+  &__features {
+    @include flex-column();
+    gap: $space-md;
+    flex: 1;
+  }
+
+  &__feature {
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+    font-size: $fs-sm;
+    color: $text-secondary;
+  }
+
+  &__check {
+    color: $primary-light;
+    font-weight: $fw-bold;
+    flex-shrink: 0;
+  }
+
+  &__btn {
+    @include button-ghost();
+    width: 100%;
+    margin-top: auto;
+
+    &--primary {
+      @include button-primary();
+      width: 100%;
+    }
+  }
+}

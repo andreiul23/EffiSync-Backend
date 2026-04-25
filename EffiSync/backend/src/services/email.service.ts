@@ -1,11 +1,12 @@
 import { google } from "googleapis";
 import { prisma } from "../lib/prisma.js";
+import { env } from "../config/env.js";
 
 function getGmailClient(userRefreshToken: string) {
   const oauth2Client = new google.auth.OAuth2(
-    process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET,
-    process.env.GOOGLE_REDIRECT_URI
+    env.GOOGLE_CLIENT_ID,
+    env.GOOGLE_CLIENT_SECRET,
+    env.GOOGLE_REDIRECT_URI
   );
   
   oauth2Client.setCredentials({ refresh_token: userRefreshToken });

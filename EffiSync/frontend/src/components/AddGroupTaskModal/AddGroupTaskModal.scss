@@ -1,0 +1,41 @@
+.add-gtask {
+  &__overlay { @include modal-overlay(); }
+  @include modal-content(); width: 100%; max-width: 460px;
+
+  &__header {
+    @include flex-between(); margin-bottom: $space-lg;
+    h3 { font-family: $font-heading; font-size: $fs-lg; font-weight: $fw-bold; }
+  }
+  &__close {
+    background: none; border: none; color: $text-muted; font-size: $fs-2xl;
+    cursor: pointer; line-height: 1; &:hover { color: $text-primary; }
+  }
+  &__form { @include flex-column(); gap: $space-md; }
+  &__field { @include flex-column(); gap: $space-xs; }
+  &__label {
+    font-size: $fs-xs; font-weight: $fw-medium; color: $text-muted;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  &__input { @include input-base(); }
+  &__textarea { @include input-base(); resize: vertical; }
+  &__select {
+    @include input-base(); cursor: pointer;
+    option { background: $bg-card; color: $text-primary; }
+  }
+  &__row { display: grid; grid-template-columns: 1fr 1fr; gap: $space-md; }
+  &__actions {
+    display: flex; gap: $space-sm; justify-content: flex-end;
+    padding-top: $space-md; border-top: 1px solid $glass-border;
+  }
+  &__btn {
+    @include button-base(); padding: $space-sm $space-xl; font-size: $fs-sm;
+    &--primary {
+      background: $gradient-accent; color: $white-off;
+      &:hover { box-shadow: $shadow-glow; transform: translateY(-1px); }
+    }
+    &--ghost {
+      background: transparent; color: $text-secondary; border: 1px solid $glass-border;
+      &:hover { background: $glass-bg; }
+    }
+  }
+}

@@ -1,0 +1,129 @@
+.header {
+  position: fixed;
+  top: $space-md;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - #{$space-xl * 2});
+  max-width: 1100px;
+  z-index: $z-header;
+  animation: fadeIn 0.6s ease;
+
+  &__nav {
+    @include glass($glass-bg-strong, 24px, $glass-border-strong);
+    @include flex-between();
+    padding: $space-sm $space-lg;
+    border-radius: $radius-pill;
+    box-shadow: $shadow-lg;
+  }
+
+  &__logo {
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+    text-decoration: none;
+    color: $text-primary;
+    font-family: $font-heading;
+    font-weight: $fw-bold;
+    font-size: $fs-lg;
+
+    &-icon {
+      width: 24px;
+      height: 24px;
+      object-fit: contain;
+    }
+
+    &-text {
+      @include gradient-text($gradient-primary);
+      font-size: $fs-lg;
+    }
+  }
+
+  &__links {
+    display: flex;
+    align-items: center;
+    gap: $space-xs;
+  }
+
+  &__link {
+    background: none;
+    border: none;
+    color: $text-secondary;
+    font-family: $font-body;
+    font-size: $fs-sm;
+    font-weight: $fw-medium;
+    padding: $space-sm $space-md;
+    border-radius: $radius-pill;
+    cursor: pointer;
+    transition: all $transition-base;
+    text-decoration: none;
+
+    &:hover {
+      color: $text-primary;
+      background: rgba(255, 255, 255, 0.08);
+    }
+  }
+
+  &__btn {
+    @include button-base();
+    padding: $space-sm $space-lg;
+    font-size: $fs-sm;
+    font-weight: $fw-semibold;
+
+    &--primary {
+      background: $gradient-accent;
+      color: $white-off;
+      box-shadow: 0 0 15px rgba($purple, 0.2);
+
+      &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 0 25px rgba($purple, 0.4);
+      }
+    }
+
+    &--ghost {
+      background: transparent;
+      color: $text-primary;
+      border: 1px solid $glass-border-strong;
+
+      &:hover {
+        background: $glass-bg-strong;
+        border-color: rgba($purple, 0.3);
+      }
+    }
+  }
+
+  &__mobile-toggle {
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    background: none;
+    border: none;
+    padding: $space-sm;
+    cursor: pointer;
+
+    span {
+      width: 20px;
+      height: 2px;
+      background: $text-primary;
+      border-radius: 2px;
+      transition: all $transition-base;
+    }
+  }
+
+  @include respond-to($bp-tablet) {
+    width: calc(100% - #{$space-md * 2});
+    top: $space-sm;
+
+    &__nav {
+      padding: $space-sm $space-md;
+    }
+
+    &__links {
+      display: none;
+    }
+
+    &__mobile-toggle {
+      display: flex;
+    }
+  }
+}

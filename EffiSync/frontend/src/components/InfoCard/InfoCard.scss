@@ -1,0 +1,37 @@
+.info-card {
+  @include glass-strong();
+  border-radius: $radius-xl;
+  overflow: hidden;
+  animation: modalIn 0.5s ease;
+
+  &__visual {
+    padding: $space-lg;
+    min-height: 300px;
+    @include flex-center();
+  }
+
+  &__content {
+    padding: $space-lg $space-xl;
+    border-top: 1px solid $glass-border;
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  &__icon {
+    font-size: 1.5rem;
+    margin-bottom: $space-xs;
+    display: block;
+  }
+
+  &__title {
+    font-family: $font-heading;
+    font-size: $fs-lg;
+    font-weight: $fw-bold;
+    color: $text-primary;
+    margin-bottom: $space-xs;
+  }
+
+  &__subtitle {
+    font-size: $fs-sm;
+    color: $text-muted;
+  }
+}

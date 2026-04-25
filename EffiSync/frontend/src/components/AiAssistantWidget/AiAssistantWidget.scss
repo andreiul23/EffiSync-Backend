@@ -1,0 +1,210 @@
+// AI Widget Toggle Button
+.ai-widget-btn {
+  position: fixed;
+  bottom: $space-xl;
+  right: $space-xl;
+  width: 56px; height: 56px;
+  border-radius: $radius-round;
+  background: $gradient-accent;
+  border: none;
+  cursor: pointer;
+  z-index: $z-ai-widget;
+  box-shadow: $shadow-lg, $shadow-glow;
+  transition: all $transition-base;
+  @include flex-center();
+
+  &:hover {
+    transform: scale(1.1);
+    box-shadow: $shadow-xl, $shadow-glow-strong;
+  }
+
+  &--active {
+    background: $bg-card;
+    border: 1px solid $glass-border-strong;
+    box-shadow: $shadow-md;
+    &:hover { box-shadow: $shadow-lg; }
+  }
+
+  &__icon {
+    font-size: $fs-xl;
+    transition: transform $transition-base;
+  }
+}
+
+// AI Panel
+.ai-panel {
+  position: fixed;
+  top: $space-lg;
+  right: $space-lg;
+  bottom: 90px;
+  width: min(50vw, 700px);
+  z-index: $z-ai-panel;
+  display: flex;
+  border-radius: $radius-xl;
+  overflow: hidden;
+  @include glass-strong();
+  box-shadow: $shadow-xl;
+  animation: slideInRight 0.3s ease;
+
+  @include respond-to($bp-tablet) {
+    width: calc(100vw - #{$space-lg * 2});
+    top: $space-md;
+    right: $space-md;
+    bottom: 80px;
+  }
+
+  // Main chat area
+  &__main {
+    flex: 1;
+    @include flex-column();
+    min-width: 0;
+  }
+
+  &__header {
+    padding: $space-md $space-lg;
+    border-bottom: 1px solid $glass-border;
+    @include flex-between();
+  }
+
+  &__header-info {
+    display: flex; align-items: center; gap: $space-md;
+  }
+
+  &__header-icon { font-size: $fs-xl; }
+
+  &__header-title {
+    font-family: $font-heading; font-size: $fs-md; font-weight: $fw-bold;
+  }
+
+  &__header-status {
+    font-size: $fs-xs; color: #4caf50;
+  }
+
+  // Messages
+  &__messages {
+    flex: 1; overflow-y: auto; @include scrollbar-custom();
+    padding: $space-lg;
+    @include flex-column(); gap: $space-md;
+  }
+
+  &__msg {
+    display: flex; gap: $space-sm; max-width: 85%;
+    animation: slideUp 0.3s ease;
+
+    &--assistant {
+      align-self: flex-start;
+    }
+
+    &--user {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+
+    &-avatar {
+      width: 28px; height: 28px; flex-shrink: 0;
+      @include flex-center();
+      font-size: $fs-sm;
+    }
+
+    &-bubble {
+      padding: $space-md $space-lg;
+      border-radius: $radius-lg;
+      font-size: $fs-sm;
+      line-height: 1.6;
+    }
+
+    &--assistant .ai-panel__msg-bubble {
+      background: rgba($purple, 0.1);
+      border: 1px solid rgba($purple, 0.15);
+      color: $text-primary;
+      border-top-left-radius: $radius-sm;
+    }
+
+    &--user .ai-panel__msg-bubble {
+      background: $gradient-accent;
+      color: $white-off;
+      border-top-right-radius: $radius-sm;
+    }
+  }
+
+  // Input
+  &__input-area {
+    padding: $space-md $space-lg;
+    border-top: 1px solid $glass-border;
+    display: flex; gap: $space-sm;
+  }
+
+  &__input {
+    @include input-base();
+    flex: 1;
+  }
+
+  &__send {
+    width: 44px; height: 44px;
+    border-radius: $radius-round;
+    background: $gradient-accent;
+    border: none; color: $white-off;
+    font-size: $fs-md;
+    cursor: pointer;
+    @include flex-center();
+    transition: all $transition-base;
+    flex-shrink: 0;
+    &:hover { box-shadow: $shadow-glow; transform: scale(1.05); }
+  }
+
+  // Sidebar with conversations
+  &__sidebar {
+    width: 200px;
+    border-left: 1px solid $glass-border;
+    @include flex-column();
+    background: rgba(0,0,0,0.15);
+
+    @include respond-to($bp-tablet) {
+      display: none;
+    }
+  }
+
+  &__sidebar-header {
+    @include flex-between();
+    padding: $space-md;
+    border-bottom: 1px solid $glass-border;
+    h4 { font-size: $fs-xs; font-weight: $fw-semibold; color: $text-muted; text-transform: uppercase; letter-spacing: 1px; }
+  }
+
+  &__new-conv {
+    width: 28px; height: 28px;
+    border-radius: $radius-round;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid $glass-border;
+    color: $text-primary; font-size: $fs-md;
+    cursor: pointer; @include flex-center();
+    transition: all $transition-fast;
+    &:hover { background: rgba($purple, 0.15); border-color: $purple; }
+  }
+
+  &__conv-list {
+    flex: 1; overflow-y: auto; @include scrollbar-custom();
+    padding: $space-sm;
+    @include flex-column(); gap: 2px;
+  }
+
+  &__conv {
+    display: block; width: 100%;
+    padding: $space-sm $space-md;
+    background: none; border: none;
+    color: $text-secondary; text-align: left;
+    border-radius: $radius-sm;
+    cursor: pointer; transition: all $transition-fast;
+
+    &:hover { background: rgba(255,255,255,0.05); }
+    &--active { background: rgba($purple, 0.12); color: $text-primary; }
+
+    &-title {
+      display: block; font-size: $fs-xs; font-weight: $fw-medium;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    &-date {
+      display: block; font-size: 10px; color: $text-muted; margin-top: 2px;
+    }
+  }
+}

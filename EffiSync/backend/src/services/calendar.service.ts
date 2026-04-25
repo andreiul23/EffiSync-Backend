@@ -27,8 +27,13 @@ export const getTokens = async (code: string) => {
 };
 
 export const getUserBusySlots = async (userId: string, refreshToken: string) => {
-  oauth2Client.setCredentials({ refresh_token: refreshToken });
-  const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+  const userClient = new google.auth.OAuth2(
+    env.GOOGLE_CLIENT_ID,
+    env.GOOGLE_CLIENT_SECRET,
+    env.GOOGLE_REDIRECT_URI
+  );
+  userClient.setCredentials({ refresh_token: refreshToken });
+  const calendar = google.calendar({ version: "v3", auth: userClient });
 
   const timeMin = new Date();
   timeMin.setHours(0, 0, 0, 0); // Start of today

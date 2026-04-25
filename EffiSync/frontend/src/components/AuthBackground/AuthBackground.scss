@@ -1,0 +1,103 @@
+.auth-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+
+  &__blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(100px);
+    opacity: 0.6;
+    transition: transform 0.4s ease-out;
+  }
+
+  &__noise {
+    position: absolute;
+    inset: 0;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  }
+
+  // Login variant — violet / purple tones
+  &--login {
+    background: linear-gradient(160deg, #0D0D12 0%, #1a0d2e 40%, #0D0D12 100%);
+
+    .auth-bg__blob--1 {
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, $purple-deep, transparent 70%);
+      top: -15%;
+      right: -5%;
+      animation: blobFloat1 18s ease-in-out infinite;
+    }
+
+    .auth-bg__blob--2 {
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, $purple, transparent 70%);
+      bottom: -10%;
+      left: -5%;
+      animation: blobFloat2 22s ease-in-out infinite;
+    }
+
+    .auth-bg__blob--3 {
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba($pink-light, 0.4), transparent 70%);
+      top: 40%;
+      left: 50%;
+      animation: blobFloat3 20s ease-in-out infinite;
+    }
+  }
+
+  // Signup variant — shifted hue (more pink/magenta)
+  &--signup {
+    background: linear-gradient(160deg, #0D0D12 0%, #200d2e 40%, #0D0D12 100%);
+
+    .auth-bg__blob--1 {
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, #7B1FA2, transparent 70%);
+      top: -10%;
+      left: -5%;
+      animation: blobFloat2 20s ease-in-out infinite;
+    }
+
+    .auth-bg__blob--2 {
+      width: 450px;
+      height: 450px;
+      background: radial-gradient(circle, rgba($pink-light, 0.5), transparent 70%);
+      bottom: -15%;
+      right: -5%;
+      animation: blobFloat1 24s ease-in-out infinite;
+    }
+
+    .auth-bg__blob--3 {
+      width: 350px;
+      height: 350px;
+      background: radial-gradient(circle, $purple-deep, transparent 70%);
+      top: 50%;
+      right: 30%;
+      animation: blobFloat3 18s ease-in-out infinite;
+    }
+  }
+}
+
+@keyframes blobFloat1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(40px, -30px) scale(1.05); }
+  50% { transform: translate(-20px, 40px) scale(0.95); }
+  75% { transform: translate(30px, 20px) scale(1.02); }
+}
+
+@keyframes blobFloat2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-50px, 30px) scale(1.08); }
+  66% { transform: translate(30px, -40px) scale(0.92); }
+}
+
+@keyframes blobFloat3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(40px, -50px) scale(1.1); }
+}

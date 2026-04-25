@@ -1,0 +1,26 @@
+.cal-grid {
+  width: 100%;
+
+  &__header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    margin-bottom: $space-sm;
+  }
+
+  &__weekday {
+    text-align: center;
+    font-size: $fs-xs;
+    font-weight: $fw-semibold;
+    color: $text-muted;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: $space-sm;
+  }
+
+  &__body {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+  }
+}

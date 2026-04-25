@@ -1,0 +1,78 @@
+.gtask-card {
+  display: flex;
+  align-items: stretch;
+  background: $bg-card;
+  border: 1px solid transparent;
+  border-radius: $radius-md;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all $transition-base;
+
+  &:hover {
+    background: $bg-card-hover;
+    border-color: $glass-border-strong;
+    transform: translateX(4px);
+  }
+
+  &--ai {
+    // Intentionally empty, relying only on the badge
+  }
+
+  &__priority {
+    width: 4px;
+    flex-shrink: 0;
+  }
+
+  &__content {
+    padding: $space-md;
+    flex: 1;
+    @include flex-column();
+    gap: $space-xs;
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+    flex-wrap: wrap;
+  }
+
+  &__name {
+    font-size: $fs-sm;
+    font-weight: $fw-semibold;
+    color: $text-primary;
+  }
+
+  &__ai-badge {
+    font-size: 10px;
+    font-weight: $fw-bold;
+    color: $purple;
+    background: rgba($purple, 0.15);
+    padding: 2px $space-sm;
+    border-radius: $radius-pill;
+    animation: pulse-glow 3s ease-in-out infinite;
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: $space-md;
+  }
+
+  &__points {
+    font-size: $fs-xs;
+    color: $primary-light;
+    font-weight: $fw-semibold;
+  }
+
+  &__status {
+    font-size: 10px;
+    padding: 2px $space-sm;
+    border-radius: $radius-pill;
+    font-weight: $fw-medium;
+
+    &--open { color: #4caf50; background: rgba(#4caf50, 0.1); }
+    &--in-progress { color: #ff9800; background: rgba(#ff9800, 0.1); }
+    &--done { color: $text-muted; background: rgba(255,255,255,0.05); }
+  }
+}

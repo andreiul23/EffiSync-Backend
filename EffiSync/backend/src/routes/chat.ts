@@ -335,7 +335,7 @@ export async function chatRoutes(app: FastifyInstance) {
 
       calculate_fair_assignment: {
         description:
-          "A logic-based tool that recommends the best person for a task based on Lowest Points and Current Availability.",
+          "A logic-based tool that recommends the best person for a task based on Load Score: (activeTasks * 10) - pointsBalance. Lowest score = best candidate. Use this before assigning any task.",
         parameters: z.object({
           _placeholder: z.string().optional(),
         }),
@@ -345,27 +345,40 @@ export async function chatRoutes(app: FastifyInstance) {
           const members = await prisma.user.findMany({
             where: { householdId },
             select: { id: true, name: true, pointsBalance: true, googleRefreshToken: true },
-            orderBy: { pointsBalance: "asc" },
           });
 
-          const candidates = [];
+          const candidates = await Promise.all(
+            members.map(async (member) => {
+              // Count active tasks (IN_PROGRESS)
+              const activeTaskCount = await prisma.task.count({
+                where: { assignedToId: member.id, status: "IN_PROGRESS" },
+              });
 
-          for (const member of members) {
-            let isBusy = false;
-            if (member.googleRefreshToken) {
-              const busySlots = await getUserBusySlots(member.id, member.googleRefreshToken);
-              const now = new Date();
-              isBusy = busySlots.some((slot) => now >= slot.startTime && now <= slot.endTime);
-            }
-            candidates.push({ ...member, isBusy });
-          }
+              // Load Score: higher active tasks = higher burden; more points = already rewarded = lower priority
+              const loadScore = (activeTaskCount * 10) - member.pointsBalance;
 
-          // Best candidate is the one with lowest points who is NOT busy.
-          const bestCandidate = candidates.find(c => !c.isBusy) || candidates[0]; // fallback to lowest points even if busy
+              // Check calendar availability
+              let isBusy = false;
+              if (member.googleRefreshToken) {
+                const busySlots = await getUserBusySlots(member.id, member.googleRefreshToken);
+                const now = new Date();
+                isBusy = busySlots.some((slot) => now >= slot.startTime && now <= slot.endTime);
+              }
+
+              return { ...member, activeTaskCount, loadScore, isBusy };
+            })
+          );
+
+          // Sort by load score ascending (lower = less burdened = best candidate)
+          candidates.sort((a, b) => a.loadScore - b.loadScore);
+
+          // Prefer someone who is NOT currently busy; fallback to lowest load score
+          const bestCandidate = candidates.find(c => !c.isBusy) ?? candidates[0];
 
           return {
             recommendation: bestCandidate,
             allCandidates: candidates,
+            algorithm: "LoadScore = (activeTasks * 10) - pointsBalance",
           };
         },
       },

@@ -3,7 +3,12 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "dev": "pnpm --parallel --filter @effisync/backend --filter @effisync/frontend dev",
+    "install:all": "pnpm install",
+    "build:all": "pnpm --filter @effisync/backend --filter @effisync/frontend build",
     "dev:backend": "pnpm --filter @effisync/backend dev",
-    "build:backend": "pnpm --filter @effisync/backend build"
+    "dev:frontend": "pnpm --filter @effisync/frontend dev",
+    "build:backend": "pnpm --filter @effisync/backend build",
+    "build:frontend": "pnpm --filter @effisync/frontend build"
   }
 }

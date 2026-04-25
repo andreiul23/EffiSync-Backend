@@ -1,0 +1,21 @@
+.group-task-list {
+  @include flex-column();
+  gap: $space-md;
+
+  &__title {
+    font-family: $font-heading;
+    font-size: $fs-md;
+    font-weight: $fw-bold;
+    color: $text-primary;
+    padding-bottom: $space-sm;
+    border-bottom: 1px solid $glass-border;
+  }
+
+  &__items {
+    @include flex-column();
+    gap: $space-sm;
+    @include scrollbar-custom();
+    max-height: calc(100vh - 250px);
+    overflow-y: auto;
+  }
+}

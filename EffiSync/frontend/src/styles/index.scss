@@ -1,0 +1,101 @@
+// ============================
+// EffiSync Global Styles
+// ============================
+
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: $font-body;
+  background: $bg-dark;
+  color: $text-primary;
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: $font-heading;
+  font-weight: $fw-bold;
+  line-height: 1.2;
+  color: $text-primary;
+}
+
+a {
+  color: $primary-light;
+  text-decoration: none;
+  transition: color $transition-fast;
+
+  &:hover {
+    color: $primary;
+  }
+}
+
+button {
+  font-family: $font-body;
+  cursor: pointer;
+}
+
+input, select, textarea {
+  font-family: $font-body;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+ul, ol {
+  list-style: none;
+}
+
+// Utility classes
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 $space-xl;
+
+  @media (max-width: $bp-tablet) {
+    padding: 0 $space-md;
+  }
+}
+
+// Selection styling
+::selection {
+  background: rgba($purple, 0.4);
+  color: $white-off;
+}
+
+// Focus visible
+:focus-visible {
+  outline: 2px solid $purple;
+  outline-offset: 2px;
+}

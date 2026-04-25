@@ -1,10 +1,6 @@
 import { prisma } from "../lib/prisma.js";
 import { sendTaskAssignedEmail } from "./email.service.js";
-
-// ─── Constants ──────────────────────────────────────────────
-const VETO_COST = 50;
-const POINTS_MULTIPLIER = 1.5;
-const MAX_POINTS_VALUE = 500; // Hard cap to prevent infinite inflation
+import { VETO_COST, POINTS_MULTIPLIER, MAX_POINTS_VALUE } from "@effisync/shared";
 
 // ─── Validate Task ──────────────────────────────────────────
 export const validateTask = async (taskId: string, validatorUserId: string) => {
@@ -16,6 +12,10 @@ export const validateTask = async (taskId: string, validatorUserId: string) => {
 
     if (task.status !== "AWAITING_REVIEW" && task.status !== "IN_PROGRESS") {
       throw new Error("Task must be AWAITING_REVIEW or IN_PROGRESS to validate");
+    }
+
+    if (!task.assignedToId) {
+      throw new Error("Cannot validate a task that has no assignee");
     }
 
     if (task.assignedToId === validatorUserId) {

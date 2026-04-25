@@ -1,0 +1,111 @@
+.create-group {
+  &__overlay { @include modal-overlay(); }
+  @include modal-content();
+  width: 100%;
+  max-width: 680px;
+
+  &__top {
+    display: flex;
+    gap: $space-xl;
+    margin-bottom: $space-xl;
+    @include respond-to($bp-mobile) { flex-direction: column-reverse; }
+  }
+
+  &__left { flex: 1; @include flex-column(); gap: $space-lg; }
+
+  &__right {
+    flex-shrink: 0;
+    display: flex; align-items: flex-start; justify-content: center;
+  }
+
+  &__image-holder {
+    width: 120px; height: 120px;
+    border-radius: $radius-lg;
+    background: rgba(255,255,255,0.04);
+    border: 2px dashed $glass-border-strong;
+    @include flex-center();
+    flex-direction: column;
+    gap: $space-sm;
+    cursor: pointer;
+    transition: all $transition-base;
+    overflow: hidden;
+    &:hover { border-color: $purple; background: rgba($purple, 0.05); }
+  }
+
+  &__image-preview {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  &__image-error {
+    font-size: $fs-xs;
+    color: #e74c3c;
+    margin-top: $space-sm;
+    text-align: center;
+    max-width: 120px;
+  }
+
+  &__image-text {
+    font-size: $fs-xs;
+    color: $text-muted;
+  }
+  &__image-icon { font-size: $fs-xl; }
+
+  &__title-row {
+    display: flex; gap: $space-md; align-items: flex-end;
+    @include respond-to($bp-mobile) { flex-direction: column; align-items: stretch; }
+  }
+
+  &__field { @include flex-column(); gap: $space-xs; flex: 1; }
+  &__label {
+    font-size: $fs-xs; font-weight: $fw-medium; color: $text-muted;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  &__input { @include input-base(); }
+  &__textarea { @include input-base(); resize: vertical; }
+
+  &__type-wrapper { position: relative; }
+  &__type-btn {
+    @include button-base();
+    padding: $space-sm $space-md;
+    font-size: $fs-sm;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid $glass-border;
+    color: $text-secondary;
+    border-radius: $radius-md;
+    white-space: nowrap;
+    &:hover { border-color: $purple; }
+  }
+  &__type-dropdown {
+    position: absolute; top: 100%; left: 0; right: 0;
+    background: $bg-elevated; border: 1px solid $glass-border-strong;
+    border-radius: $radius-md; margin-top: $space-xs;
+    box-shadow: $shadow-lg; z-index: $z-dropdown;
+    overflow: hidden;
+  }
+  &__type-option {
+    display: block; width: 100%; padding: $space-sm $space-md;
+    background: none; border: none; color: $text-secondary;
+    font-size: $fs-sm; text-align: left; cursor: pointer;
+    transition: background $transition-fast;
+    &:hover { background: rgba($purple, 0.15); color: $text-primary; }
+  }
+
+  &__actions {
+    display: flex; justify-content: space-between;
+    padding-top: $space-lg; border-top: 1px solid $glass-border;
+  }
+  &__btn {
+    @include button-base();
+    padding: $space-sm $space-xl; font-size: $fs-sm;
+    &--cancel {
+      background: transparent; color: $text-muted; border: 1px solid $glass-border;
+      &:hover { color: #e74c3c; border-color: rgba(#e74c3c, 0.3); }
+    }
+    &--create {
+      background: $gradient-accent; color: $white-off;
+      &:hover { box-shadow: $shadow-glow; transform: translateY(-1px); }
+    }
+  }
+}

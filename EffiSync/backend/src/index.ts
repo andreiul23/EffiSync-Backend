@@ -7,6 +7,8 @@ import { authRoutes } from "./routes/auth.js";
 import { taskRoutes } from "./routes/tasks.js";
 import { prisma } from "./lib/prisma.js";
 import { debugRoutes } from "./routes/debug.js";
+import { aiRoutes } from "./routes/ai.js";
+import { householdRoutes } from "./routes/households.js";
 import { startCronJobs } from "./services/cron.service.js";
 /**
  * Bootstrap the Fastify server.
@@ -61,10 +63,12 @@ async function main() {
   });
 
   await app.register(healthRoutes);
-  await app.register(chatRoutes, { prefix: "/api" });
-  await app.register(authRoutes, { prefix: "/auth" });
-  await app.register(taskRoutes, { prefix: "/api" });
-  await app.register(debugRoutes, { prefix: "/api/debug" });
+  await app.register(chatRoutes,     { prefix: "/api" });
+  await app.register(authRoutes,     { prefix: "/api/auth" });
+  await app.register(taskRoutes,     { prefix: "/api" });
+  await app.register(aiRoutes,       { prefix: "/api" });
+  await app.register(householdRoutes,{ prefix: "/api" });
+  await app.register(debugRoutes,    { prefix: "/api/debug" });
 
   await app.ready();
   app.log.info(app.printRoutes({ commonPrefix: false }));

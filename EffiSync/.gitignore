@@ -13,6 +13,7 @@ dist
 # Logs
 *.log
 npm-debug.log*
+pnpm-debug.log*
 
 # Prisma
 prisma/*.db
@@ -27,3 +28,9 @@ prisma/migrations/
 # OS
 .DS_Store
 Thumbs.db
+
+# Package manager artifacts (npm lockfiles in a pnpm workspace)
+package-lock.json
+
+# Scratch / test scripts
+scratch/

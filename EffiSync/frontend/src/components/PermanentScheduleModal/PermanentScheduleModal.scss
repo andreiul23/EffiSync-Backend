@@ -1,0 +1,57 @@
+.perm-modal {
+  &__overlay { @include modal-overlay(); }
+  @include modal-content();
+  width: 100%;
+  max-width: 500px;
+
+  &__header {
+    @include flex-between();
+    margin-bottom: $space-lg;
+    h3 { font-family: $font-heading; font-size: $fs-lg; font-weight: $fw-bold; }
+  }
+  &__close {
+    background: none; border: none; color: $text-muted; font-size: $fs-2xl;
+    cursor: pointer; line-height: 1;
+    &:hover { color: $text-primary; }
+  }
+  &__form { @include flex-column(); gap: $space-md; }
+  &__field { @include flex-column(); gap: $space-xs; }
+  &__label {
+    font-size: $fs-xs; font-weight: $fw-medium; color: $text-muted;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  &__input { @include input-base(); }
+  &__row { display: grid; grid-template-columns: 1fr 1fr; gap: $space-md; }
+  &__days { display: flex; gap: $space-sm; flex-wrap: wrap; }
+  &__day {
+    @include button-base();
+    padding: $space-sm $space-md;
+    font-size: $fs-xs;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid $glass-border;
+    color: $text-muted;
+    border-radius: $radius-pill;
+    &:hover { border-color: $purple; color: $text-primary; }
+    &--active {
+      background: $gradient-accent;
+      color: $white-off;
+      border-color: transparent;
+    }
+  }
+  &__actions {
+    display: flex; gap: $space-sm; justify-content: flex-end;
+    padding-top: $space-md; border-top: 1px solid $glass-border;
+  }
+  &__btn {
+    @include button-base();
+    padding: $space-sm $space-lg; font-size: $fs-sm;
+    &--primary {
+      background: $gradient-accent; color: $white-off;
+      &:hover { box-shadow: $shadow-glow; transform: translateY(-1px); }
+    }
+    &--ghost {
+      background: transparent; color: $text-secondary; border: 1px solid $glass-border;
+      &:hover { background: $glass-bg; }
+    }
+  }
+}
