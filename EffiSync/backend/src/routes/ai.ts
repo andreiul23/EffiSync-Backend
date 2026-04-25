@@ -1,25 +1,18 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "../lib/prisma.js";
-import { z } from "zod";
 import { syncCalendarToTasks } from "../services/calendarSync.service.js";
+import { getAuthUserId, requireAuth } from "../lib/auth.js";
 
 export async function aiRoutes(app: FastifyInstance) {
+  app.addHook("preHandler", requireAuth);
+
   /**
    * POST /api/ai/initialize
    * Prepares the AI agent context for a specific user.
    * Called once after login by the frontend.
    */
   app.post("/ai/initialize", async (request, reply) => {
-    const bodySchema = z.object({
-      userId: z.string().uuid(),
-    });
-
-    const parsed = bodySchema.safeParse(request.body);
-    if (!parsed.success) {
-      return reply.status(400).send({ error: "userId is required" });
-    }
-
-    const { userId } = parsed.data;
+    const userId = getAuthUserId(request);
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -34,16 +27,12 @@ export async function aiRoutes(app: FastifyInstance) {
 
     if (!user) return reply.status(404).send({ error: "User not found" });
 
-    // Trigger a background calendar sync if the user has Google connected
-    let calendarSync = null;
+    // Fire-and-forget calendar sync so the response returns immediately.
+    // Awaiting this saturates the Prisma connection pool and blocks every
+    // other request for ~30s while 50 events are upserted.
     if (user.googleRefreshToken && user.householdId) {
-      calendarSync = await syncCalendarToTasks(
-        user.id,
-        user.googleRefreshToken,
-        user.householdId
-      ).catch((err) => {
-        app.log.warn(err, "Calendar sync failed during AI init");
-        return null;
+      syncCalendarToTasks(user.id, user.googleRefreshToken, user.householdId).catch((err) => {
+        app.log.warn(err, "Background calendar sync failed during AI init");
       });
     }
 
@@ -57,7 +46,7 @@ export async function aiRoutes(app: FastifyInstance) {
         pointsBalance: user.pointsBalance,
         hasCalendar: !!user.googleRefreshToken,
       },
-      calendarSync,
+      calendarSync: user.googleRefreshToken ? { status: "scheduled" } : null,
     });
   });
 
@@ -66,14 +55,7 @@ export async function aiRoutes(app: FastifyInstance) {
    * Manually trigger a calendar sync for a user.
    */
   app.post("/ai/sync-calendar", async (request, reply) => {
-    const bodySchema = z.object({
-      userId: z.string().uuid(),
-    });
-
-    const parsed = bodySchema.safeParse(request.body);
-    if (!parsed.success) return reply.status(400).send({ error: "userId required" });
-
-    const { userId } = parsed.data;
+    const userId = getAuthUserId(request);
 
     const user = await prisma.user.findUnique({
       where: { id: userId },

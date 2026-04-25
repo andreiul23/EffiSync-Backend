@@ -60,6 +60,77 @@
     gap: $space-sm;
   }
 
+  &__integration {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $space-md;
+    padding: $space-md;
+    background: $bg-card;
+    border-radius: $radius-md;
+    border: 1px solid $glass-border;
+    flex-wrap: wrap;
+  }
+
+  &__integration-info {
+    display: flex;
+    align-items: center;
+    gap: $space-md;
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__integration-icon {
+    font-size: 28px;
+  }
+
+  &__integration-name {
+    font-weight: $fw-semibold;
+    color: $text-primary;
+    font-size: $fs-md;
+    margin-bottom: 2px;
+  }
+
+  &__integration-desc {
+    font-size: $fs-xs;
+    color: $text-muted;
+    max-width: 360px;
+  }
+
+  &__integration-btn {
+    background: $gradient-accent;
+    color: $white-off;
+    border: none;
+    padding: $space-sm $space-lg;
+    border-radius: $radius-md;
+    font-weight: $fw-semibold;
+    font-size: $fs-sm;
+    cursor: pointer;
+    transition: all $transition-fast;
+    white-space: nowrap;
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba($purple, 0.4);
+    }
+  }
+
+  &__integration-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: $fs-xs;
+    font-weight: $fw-semibold;
+    white-space: nowrap;
+
+    &--ok {
+      background: rgba(76, 175, 80, 0.15);
+      color: #4caf50;
+      border: 1px solid rgba(76, 175, 80, 0.3);
+    }
+  }
+
   &__schedule-item {
     display: flex;
     align-items: center;

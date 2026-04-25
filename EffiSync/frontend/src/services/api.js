@@ -50,8 +50,14 @@ export const auth = {
   /** POST /auth/login */
   login: (body) => post(`${AUTH_BASE_URL}/login`, body),
 
+  /** GET /auth/me */
+  me: () => get(`${AUTH_BASE_URL}/me`),
+
   /** GET /auth/google — returns the redirect URL (browser will follow) */
   googleLoginUrl: () => `${AUTH_BASE_URL}/google`,
+
+  /** GET /auth/github — returns the redirect URL (browser will follow) */
+  githubLoginUrl: () => `${AUTH_BASE_URL}/github`,
 };
 
 // ─── 2. Tasks & Gamification ────────────────────────────
@@ -105,6 +111,40 @@ export const chat = {
 export const debug = {
   /** GET /api/debug/trigger-report/:householdId */
   triggerReport: (householdId) => get(`${API_BASE_URL}/debug/trigger-report/${householdId}`),
+};
+
+export const households = {
+  /** POST /api/households */
+  create: (body) => post(`${API_BASE_URL}/households`, body),
+
+  /** POST /api/households/join */
+  join: (body) => post(`${API_BASE_URL}/households/join`, body),
+
+  /** GET /api/households/:id */
+  getById: (id) => get(`${API_BASE_URL}/households/${id}`),
+
+  /** GET /api/households/:id/suggest-time */
+  suggestTime: (id) => get(`${API_BASE_URL}/households/${id}/suggest-time`),
+};
+
+export const ai = {
+  /** POST /api/ai/initialize */
+  initialize: () => post(`${API_BASE_URL}/ai/initialize`, {}),
+
+  /** POST /api/ai/sync-calendar */
+  syncCalendar: () => post(`${API_BASE_URL}/ai/sync-calendar`, {}),
+};
+
+export const calendar = {
+  /** POST /api/calendar/sync */
+  sync: () => post(`${API_BASE_URL}/calendar/sync`, {}),
+};
+
+export const demo = {
+  /** POST /api/demo/login — bootstraps demo data and returns JWT */
+  login: () => post(`${API_BASE_URL}/demo/login`, {}),
+  /** GET /api/demo/info — exposes shareable demo credentials */
+  info: () => get(`${API_BASE_URL}/demo/info`),
 };
 
 // ─── Legacy default export (backward-compatible) ────────

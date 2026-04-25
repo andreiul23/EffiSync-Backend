@@ -3,16 +3,15 @@ import { validateTask, useVeto, acceptTask } from "../services/economy.service.j
 import { prisma } from "../lib/prisma.js";
 import { z } from "zod";
 import { sendTaskAssignedEmail } from "../services/email.service.js";
+import { getAuthUserId, requireAuth } from "../lib/auth.js";
 
 export async function taskRoutes(app: FastifyInstance) {
+  app.addHook("preHandler", requireAuth);
+
   // ── Accept Task (race-condition safe) ─────────────────
   app.post("/tasks/:id/accept", async (request, reply) => {
     const { id } = request.params as { id: string };
-    const { userId } = request.body as { userId: string };
-
-    if (!userId) {
-      return reply.status(400).send({ error: "userId is required" });
-    }
+    const userId = getAuthUserId(request);
 
     try {
       const task = await acceptTask(id, userId);
@@ -25,11 +24,7 @@ export async function taskRoutes(app: FastifyInstance) {
   // ── Validate Task ─────────────────────────────────────
   app.post("/tasks/:id/validate", async (request, reply) => {
     const { id } = request.params as { id: string };
-    const { validatorUserId } = request.body as { validatorUserId: string };
-
-    if (!validatorUserId) {
-      return reply.status(400).send({ error: "validatorUserId is required" });
-    }
+    const validatorUserId = getAuthUserId(request);
 
     try {
       const task = await validateTask(id, validatorUserId);
@@ -41,11 +36,7 @@ export async function taskRoutes(app: FastifyInstance) {
 
   app.post("/tasks/:id/veto", async (request, reply) => {
     const { id } = request.params as { id: string };
-    const { userId } = request.body as { userId: string };
-
-    if (!userId) {
-      return reply.status(400).send({ error: "userId is required" });
-    }
+    const userId = getAuthUserId(request);
 
     try {
       const task = await useVeto(id, userId);
@@ -64,20 +55,36 @@ export async function taskRoutes(app: FastifyInstance) {
     const parsed = querySchema.safeParse(request.query);
     if (!parsed.success) return reply.status(400).send({ error: "Invalid query" });
 
+    const authUserId = getAuthUserId(request);
+    const authUser = await prisma.user.findUnique({
+      where: { id: authUserId },
+      select: { householdId: true },
+    });
+
+    if (!authUser) {
+      return reply.status(404).send({ error: "User not found" });
+    }
+
     const { userId, householdId, type } = parsed.data;
 
-    if (!userId && !householdId) {
-      return reply.status(400).send({ error: "At least one of userId or householdId is required" });
+    if (userId && userId !== authUserId) {
+      return reply.status(403).send({ error: "You can only query your own tasks" });
+    }
+
+    if (householdId && householdId !== authUser.householdId) {
+      return reply.status(403).send({ error: "You can only query your own household tasks" });
     }
 
     try {
+      const orFilters: Array<Record<string, string>> = [{ assignedToId: authUserId }];
+      if (authUser.householdId) {
+        orFilters.push({ householdId: authUser.householdId });
+      }
+
       const tasks = await prisma.task.findMany({
         where: {
           ...(type ? { type } : {}),
-          OR: [
-            userId ? { assignedToId: userId } : {},
-            householdId ? { householdId } : {},
-          ].filter(x => Object.keys(x).length > 0)
+          OR: orFilters,
         },
         include: {
           assignedTo: { select: { id: true, name: true } }
@@ -96,8 +103,6 @@ export async function taskRoutes(app: FastifyInstance) {
       difficulty: z.number().int().min(1).max(5).default(1),
       category: z.enum(["CLEANING", "SHOPPING", "ADMINISTRATIVE", "PERSONAL_GROWTH", "OTHER"]).default("OTHER"),
       type: z.enum(["INDIVIDUAL", "GROUP"]).default("INDIVIDUAL"),
-      householdId: z.string().uuid(),
-      createdById: z.string().uuid(),
       assignedToId: z.string().uuid().optional(),
       dueDate: z.string().optional()
     });
@@ -107,11 +112,43 @@ export async function taskRoutes(app: FastifyInstance) {
 
     const data = parsed.data;
     const pointsValue = data.difficulty * 10;
+    const authUserId = getAuthUserId(request);
+
+    const authUser = await prisma.user.findUnique({
+      where: { id: authUserId },
+      select: { householdId: true },
+    });
+
+    if (!authUser) {
+      return reply.status(404).send({ error: "User not found" });
+    }
+
+    if (!authUser.householdId) {
+      return reply.status(400).send({ error: "You must join a household before creating tasks" });
+    }
+
+    if (data.assignedToId) {
+      const assignee = await prisma.user.findUnique({
+        where: { id: data.assignedToId },
+        select: { householdId: true },
+      });
+
+      if (!assignee || assignee.householdId !== authUser.householdId) {
+        return reply.status(400).send({ error: "Assignee must be a member of your household" });
+      }
+    }
 
     try {
       const task = await prisma.task.create({
         data: {
-          ...data,
+          title: data.title,
+          description: data.description,
+          difficulty: data.difficulty,
+          category: data.category,
+          type: data.type,
+          assignedToId: data.assignedToId,
+          householdId: authUser.householdId,
+          createdById: authUserId,
           pointsValue,
           dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
           status: data.assignedToId ? "IN_PROGRESS" : "PENDING"
@@ -160,6 +197,40 @@ export async function taskRoutes(app: FastifyInstance) {
       updateData.status = "IN_PROGRESS";
     }
 
+    const authUserId = getAuthUserId(request);
+    const authUser = await prisma.user.findUnique({
+      where: { id: authUserId },
+      select: { householdId: true },
+    });
+
+    if (!authUser) {
+      return reply.status(404).send({ error: "User not found" });
+    }
+
+    const existingTask = await prisma.task.findUnique({
+      where: { id },
+      select: { householdId: true },
+    });
+
+    if (!existingTask) {
+      return reply.status(404).send({ error: "Task not found" });
+    }
+
+    if (!authUser.householdId || existingTask.householdId !== authUser.householdId) {
+      return reply.status(403).send({ error: "You can only update tasks in your household" });
+    }
+
+    if (parsed.data.assignedToId) {
+      const assignee = await prisma.user.findUnique({
+        where: { id: parsed.data.assignedToId },
+        select: { householdId: true },
+      });
+
+      if (!assignee || assignee.householdId !== authUser.householdId) {
+        return reply.status(400).send({ error: "Assignee must be a member of your household" });
+      }
+    }
+
     try {
       const task = await prisma.task.update({
         where: { id },
@@ -179,6 +250,29 @@ export async function taskRoutes(app: FastifyInstance) {
 
   app.delete("/tasks/:id", async (request, reply) => {
     const { id } = request.params as { id: string };
+    const authUserId = getAuthUserId(request);
+
+    const authUser = await prisma.user.findUnique({
+      where: { id: authUserId },
+      select: { householdId: true },
+    });
+
+    if (!authUser) {
+      return reply.status(404).send({ error: "User not found" });
+    }
+
+    const existingTask = await prisma.task.findUnique({
+      where: { id },
+      select: { householdId: true },
+    });
+
+    if (!existingTask) {
+      return reply.status(404).send({ error: "Task not found" });
+    }
+
+    if (!authUser.householdId || existingTask.householdId !== authUser.householdId) {
+      return reply.status(403).send({ error: "You can only delete tasks in your household" });
+    }
 
     try {
       await prisma.task.delete({ where: { id } });
@@ -191,11 +285,11 @@ export async function taskRoutes(app: FastifyInstance) {
   // ── Mark Task Complete (ownership verified) ───────────
   app.patch("/tasks/:id/complete", async (request, reply) => {
     const { id } = request.params as { id: string };
-    const bodySchema = z.object({ userId: z.string().uuid() });
+    const bodySchema = z.object({ userId: z.string().uuid().optional() });
     const parsed = bodySchema.safeParse(request.body);
-    if (!parsed.success) return reply.status(400).send({ error: "userId is required" });
+    if (!parsed.success) return reply.status(400).send({ error: "Invalid request body" });
 
-    const { userId } = parsed.data;
+    const userId = getAuthUserId(request);
 
     try {
       const task = await prisma.task.findUnique({ where: { id } });

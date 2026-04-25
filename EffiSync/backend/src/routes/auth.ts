@@ -4,80 +4,115 @@ import { z } from "zod";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { sendRealEmailViaGmail } from "../services/email.service.js";
+import { env } from "../config/env.js";
+import { getAuthUserId, requireAuth } from "../lib/auth.js";
 
 export async function authRoutes(app: FastifyInstance) {
   // Initiates the Google OAuth 2.0 flow
   app.get("/google", async (_request, reply) => {
-    const clientId = process.env.GOOGLE_CLIENT_ID;
-    const redirectUri = "http://localhost:3000/api/auth/google/callback";
+    const clientId = env.GOOGLE_CLIENT_ID;
+    const redirectUri = env.GOOGLE_REDIRECT_URI;
     const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent("email profile https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/gmail.send")}&access_type=offline&prompt=consent`;
     return reply.redirect(googleAuthUrl);
   });
 
   app.get("/google/callback", async (request, reply) => {
-    const code = (request.query as any).code;
-    if (!code) {
+    const callbackQuerySchema = z.object({ code: z.string().min(1) });
+    const parsedQuery = callbackQuerySchema.safeParse(request.query);
+    if (!parsedQuery.success) {
       return reply.status(400).send({ error: "Invalid callback query parameters." });
     }
+    const { code } = parsedQuery.data;
+
+    const googleTokenSchema = z.object({
+      access_token: z.string(),
+      refresh_token: z.string().optional(),
+      expires_in: z.number().optional(),
+      token_type: z.string().optional(),
+    });
+    const googleUserSchema = z.object({
+      email: z.string().email(),
+      name: z.string().optional(),
+    });
 
     try {
-      const redirectUri = "http://localhost:3000/api/auth/google/callback";
+      const redirectUri = env.GOOGLE_REDIRECT_URI;
       const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({
-          client_id: process.env.GOOGLE_CLIENT_ID || "",
-          client_secret: process.env.GOOGLE_CLIENT_SECRET || "",
+          client_id: env.GOOGLE_CLIENT_ID,
+          client_secret: env.GOOGLE_CLIENT_SECRET,
           code,
           redirect_uri: redirectUri,
           grant_type: "authorization_code",
         }),
       });
-      const tokenData = (await tokenRes.json()) as any;
-      
-      if (!tokenData.access_token) {
+      const tokenJson: unknown = await tokenRes.json();
+      const tokenParsed = googleTokenSchema.safeParse(tokenJson);
+      if (!tokenParsed.success) {
+        app.log.warn({ tokenJson }, "Unexpected Google token response");
         return reply.status(400).send({ error: "Failed to fetch Google access token" });
       }
+      const tokenData = tokenParsed.data;
 
       const userInfoRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
         headers: { Authorization: `Bearer ${tokenData.access_token}` }
       });
-      const userData = (await userInfoRes.json()) as any;
-      
-      const email = userData.email;
-      const name = userData.name;
-
-      if (!email) {
+      const userJson: unknown = await userInfoRes.json();
+      const userParsed = googleUserSchema.safeParse(userJson);
+      if (!userParsed.success) {
         return reply.status(400).send({ error: "No email retrieved from Google." });
       }
+      const { email, name } = userParsed.data;
 
-      const user = await prisma.user.upsert({
-        where: { email },
-        update: {
-          name: name || undefined,
-          googleRefreshToken: tokenData.refresh_token || undefined,
-        },
-        create: {
-          email,
-          name: name || undefined,
-          googleRefreshToken: tokenData.refresh_token || null,
-        },
-      });
+      // SECURITY: do NOT upsert blindly — that lets a Google login hijack
+      // an existing email/password account. Only attach Google to an account
+      // that either (a) doesn't exist yet, or (b) already had Google linked,
+      // or (c) was created via OAuth (no passwordHash).
+      const existing = await prisma.user.findUnique({ where: { email } });
+      let user;
+      if (!existing) {
+        user = await prisma.user.create({
+          data: {
+            email,
+            name: name || undefined,
+            googleRefreshToken: tokenData.refresh_token || null,
+          },
+        });
+      } else if (existing.passwordHash && !existing.googleRefreshToken) {
+        // Email/password account — refuse silent linking.
+        return reply.status(409).send({
+          error: "An account with this email already exists. Sign in with your password first, then link Google from settings.",
+        });
+      } else {
+        user = await prisma.user.update({
+          where: { id: existing.id },
+          data: {
+            name: name || existing.name || undefined,
+            googleRefreshToken: tokenData.refresh_token || existing.googleRefreshToken,
+          },
+        });
+      }
 
-      console.log('Utilizator salvat cu succes:', user.id);
+      app.log.info({ userId: user.id }, "Google OAuth login success");
 
-      const subject = "Welcome to EffiSync!";
-      const htmlBody = `Salut ${user.name || "User"}, sunt Secretara ta EffiSync. Contul tău a fost configurat cu succes folosind acest cont de Google. De acum, te voi ajuta să îți gestionezi task-urile și casa direct de aici!`;
-      sendRealEmailViaGmail(user.id, user.email, subject, htmlBody);
+      // Only send a welcome email on first OAuth link
+      if (!existing) {
+        const subject = "Welcome to EffiSync!";
+        const htmlBody = `Salut ${user.name || "User"}, sunt Secretara ta EffiSync. Contul tău a fost configurat cu succes folosind acest cont de Google. De acum, te voi ajuta să îți gestionezi task-urile și casa direct de aici!`;
+        sendRealEmailViaGmail(user.id, user.email, subject, htmlBody).catch((mailErr) => {
+          app.log.warn({ err: mailErr, userId: user.id }, "Welcome email failed");
+        });
+      }
 
-      // Async trigger for calendar sync
-      import("../services/calendarSync.service.js").then((mod) => {
-        mod.syncGoogleCalendar(user.id).catch(err => console.error("Post-login sync failed:", err));
-      });
+      // Async trigger for calendar sync — fire-and-forget so the redirect is instant
+      import("../services/calendarSync.service.js")
+        .then((mod) => mod.syncGoogleCalendar(user.id))
+        .catch((err) => app.log.warn({ err, userId: user.id }, "Post-login calendar sync failed"));
 
-      const secret: string = process.env.JWT_SECRET || "fallback_secret";
-      const token = jwt.sign({ userId: user.id }, secret, { expiresIn: "7d" });
-      return reply.redirect(`http://localhost:5173/dashboard?token=${token}`);
+      const token = jwt.sign({ userId: user.id }, env.JWT_SECRET, { expiresIn: "7d" });
+      return reply.redirect(`${env.FRONTEND_URL}/dashboard#token=${token}`);
     } catch (err) {
       app.log.error(err, "Google OAuth error");
       return reply.status(500).send({ error: "Failed to authenticate with Google." });
@@ -86,15 +121,35 @@ export async function authRoutes(app: FastifyInstance) {
 
   // GitHub OAuth Flow
   app.get("/github", async (_request, reply) => {
-    const clientId = process.env.GITHUB_CLIENT_ID;
-    const redirectUri = "http://localhost:3000/api/auth/github/callback";
-    const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=read:user user:email`;
+    const clientId = env.GITHUB_CLIENT_ID;
+    if (!clientId) return reply.status(500).send({ error: "GitHub OAuth not configured" });
+    const redirectUri = `${env.BACKEND_URL}/api/auth/github/callback`;
+    const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent("read:user user:email")}`;
     return reply.redirect(githubAuthUrl);
   });
 
   app.get("/github/callback", async (request, reply) => {
-    const code = (request.query as any).code;
-    if (!code) return reply.status(400).send({ error: "No code provided" });
+    const callbackQuerySchema = z.object({ code: z.string().min(1) });
+    const parsedQuery = callbackQuerySchema.safeParse(request.query);
+    if (!parsedQuery.success) return reply.status(400).send({ error: "No code provided" });
+    const { code } = parsedQuery.data;
+
+    const ghTokenSchema = z.object({ access_token: z.string() });
+    const ghUserSchema = z.object({
+      id: z.union([z.number(), z.string()]),
+      email: z.string().email().nullable().optional(),
+      name: z.string().nullable().optional(),
+      login: z.string(),
+    });
+    const ghEmailsSchema = z.array(z.object({
+      email: z.string().email(),
+      primary: z.boolean(),
+      verified: z.boolean(),
+    }));
+
+    if (!env.GITHUB_CLIENT_ID || !env.GITHUB_CLIENT_SECRET) {
+      return reply.status(500).send({ error: "GitHub OAuth not configured" });
+    }
 
     try {
       const tokenRes = await fetch("https://github.com/login/oauth/access_token", {
@@ -104,67 +159,79 @@ export async function authRoutes(app: FastifyInstance) {
           Accept: "application/json",
         },
         body: JSON.stringify({
-          client_id: process.env.GITHUB_CLIENT_ID,
-          client_secret: process.env.GITHUB_CLIENT_SECRET,
+          client_id: env.GITHUB_CLIENT_ID,
+          client_secret: env.GITHUB_CLIENT_SECRET,
           code,
         }),
       });
-      const tokenData = (await tokenRes.json()) as any;
-      if (!tokenData.access_token) {
+      const tokenJson: unknown = await tokenRes.json();
+      const tokenParsed = ghTokenSchema.safeParse(tokenJson);
+      if (!tokenParsed.success) {
         return reply.status(400).send({ error: "Failed to fetch access token" });
       }
+      const accessToken = tokenParsed.data.access_token;
 
       const userRes = await fetch("https://api.github.com/user", {
-        headers: { Authorization: `Bearer ${tokenData.access_token}` },
+        headers: { Authorization: `Bearer ${accessToken}`, "User-Agent": "EffiSync" },
       });
-      const userData = (await userRes.json()) as any;
+      const userJson: unknown = await userRes.json();
+      const userParsed = ghUserSchema.safeParse(userJson);
+      if (!userParsed.success) {
+        return reply.status(400).send({ error: "Invalid GitHub user payload" });
+      }
+      const userData = userParsed.data;
 
-      let email = userData.email;
+      let email: string | null | undefined = userData.email;
       if (!email) {
         const emailsRes = await fetch("https://api.github.com/user/emails", {
-          headers: { Authorization: `Bearer ${tokenData.access_token}` },
+          headers: { Authorization: `Bearer ${accessToken}`, "User-Agent": "EffiSync" },
         });
-        const emails = (await emailsRes.json()) as any;
-        const primaryEmail = emails.find((e: any) => e.primary && e.verified);
-        email = primaryEmail ? primaryEmail.email : emails[0]?.email;
+        const emailsJson: unknown = await emailsRes.json();
+        const emailsParsed = ghEmailsSchema.safeParse(emailsJson);
+        if (emailsParsed.success) {
+          const primary = emailsParsed.data.find((e) => e.primary && e.verified);
+          email = primary?.email ?? emailsParsed.data[0]?.email;
+        }
       }
 
       if (!email) {
-        return reply.status(400).send({ error: "No email retrieved from GitHub." });
+        return reply.status(400).send({ error: "No verified email retrieved from GitHub." });
       }
 
       const githubId = String(userData.id);
 
-      let user = await prisma.user.findFirst({
-        where: {
-          OR: [{ email }, { githubId }]
-        }
-      });
-
-      if (user) {
-        if (!user.githubId) {
+      // SECURITY: prevent silent account-takeover. Match by githubId first.
+      let user = await prisma.user.findFirst({ where: { githubId } });
+      if (!user) {
+        const byEmail = await prisma.user.findUnique({ where: { email } });
+        if (byEmail) {
+          if (byEmail.passwordHash && !byEmail.githubId) {
+            return reply.status(409).send({
+              error: "An account with this email already exists. Sign in with your password first, then link GitHub from settings.",
+            });
+          }
           user = await prisma.user.update({
-            where: { id: user.id },
-            data: { githubId }
+            where: { id: byEmail.id },
+            data: { githubId, name: byEmail.name || userData.name || userData.login },
+          });
+        } else {
+          user = await prisma.user.create({
+            data: {
+              email,
+              githubId,
+              name: userData.name || userData.login,
+            },
+          });
+          const subject = "Welcome to EffiSync!";
+          const htmlBody = `Salut ${user.name || "User"}, sunt Secretara ta EffiSync. Contul tău a fost configurat cu succes folosind contul de GitHub. De acum, te voi ajuta să îți gestionezi task-urile și casa direct de aici!`;
+          sendRealEmailViaGmail(user.id, user.email, subject, htmlBody).catch((mailErr) => {
+            app.log.warn({ err: mailErr, userId: user!.id }, "Welcome email failed");
           });
         }
-      } else {
-        user = await prisma.user.create({
-          data: {
-            email,
-            githubId,
-            name: userData.name || userData.login,
-          }
-        });
-
-        const subject = "Welcome to EffiSync!";
-        const htmlBody = `Salut ${user.name || "User"}, sunt Secretara ta EffiSync. Contul tău a fost configurat cu succes folosind contul de GitHub. De acum, te voi ajuta să îți gestionezi task-urile și casa direct de aici!`;
-        sendRealEmailViaGmail(user.id, user.email, subject, htmlBody);
       }
 
-      const secret: string = process.env.JWT_SECRET || "fallback_secret";
-      const token = jwt.sign({ userId: user.id }, secret, { expiresIn: "7d" });
-      return reply.redirect(`http://localhost:5173/dashboard?token=${token}`);
+      const token = jwt.sign({ userId: user.id }, env.JWT_SECRET, { expiresIn: "7d" });
+      return reply.redirect(`${env.FRONTEND_URL}/dashboard#token=${token}`);
     } catch (err) {
       app.log.error(err, "GitHub OAuth error");
       return reply.status(500).send({ error: "Failed to authenticate with GitHub." });
@@ -182,19 +249,30 @@ export async function authRoutes(app: FastifyInstance) {
 
     const { email, password, name } = parsed.data;
 
-    const existingUser = await prisma.user.findUnique({ where: { email } });
-    if (existingUser) return reply.status(400).send({ error: "Email already in use" });
-
     const passwordHash = await bcrypt.hash(password, 10);
-    const user = await prisma.user.create({
-      data: { email, passwordHash, name },
-    });
+
+    // Use Prisma's unique-constraint error instead of a TOCTOU find-then-create.
+    let user;
+    try {
+      user = await prisma.user.create({
+        data: { email, passwordHash, name },
+      });
+    } catch (err: unknown) {
+      // P2002 = Prisma unique constraint violation
+      if (typeof err === "object" && err !== null && "code" in err && (err as { code?: string }).code === "P2002") {
+        return reply.status(409).send({ error: "Email already in use" });
+      }
+      throw err;
+    }
 
     const subject = "Welcome to EffiSync!";
-    const htmlBody = `Salut ${user.name || "User"}, sunt Secretara ta EffiSync. Contul tău a fost configurat cu succes folosind acest cont de Google. De acum, te voi ajuta să îți gestionezi task-urile și casa direct de aici!`;
-    sendRealEmailViaGmail(user.id, user.email, subject, htmlBody);
+    const htmlBody = `Salut ${user.name || "User"}, sunt Secretara ta EffiSync. Contul tău a fost configurat cu succes. De acum, te voi ajuta să îți gestionezi task-urile și casa direct de aici!`;
+    sendRealEmailViaGmail(user.id, user.email, subject, htmlBody).catch((mailErr) => {
+      app.log.warn({ err: mailErr, userId: user.id }, "Welcome email failed");
+    });
 
-    return reply.send({ success: true, userId: user.id });
+    const token = jwt.sign({ userId: user.id }, env.JWT_SECRET, { expiresIn: "7d" });
+    return reply.send({ success: true, userId: user.id, token });
   });
 
   app.post("/login", async (request, reply) => {
@@ -213,32 +291,22 @@ export async function authRoutes(app: FastifyInstance) {
     const match = await bcrypt.compare(password, user.passwordHash);
     if (!match) return reply.status(401).send({ error: "Invalid email or password" });
 
-    return reply.send({ success: true, userId: user.id });
+    const token = jwt.sign({ userId: user.id }, env.JWT_SECRET, { expiresIn: "7d" });
+    return reply.send({ success: true, userId: user.id, token });
   });
-  app.get("/me", async (request, reply) => {
-    const authHeader = request.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return reply.status(401).send({ error: "Missing or invalid token" });
-    }
-    const token = authHeader.split(" ")[1];
-    if (!token) {
-      return reply.status(401).send({ error: "Missing token" });
-    }
-    try {
-      const decoded = jwt.verify(token, String(process.env.JWT_SECRET || "fallback_secret")) as unknown as { userId: string };
-      const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
-      if (!user) return reply.status(404).send({ error: "User not found" });
-      return reply.send({
-        success: true,
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          householdId: user.householdId,
-        }
-      });
-    } catch (err) {
-      return reply.status(401).send({ error: "Invalid token" });
-    }
+  app.get("/me", { preHandler: requireAuth }, async (request, reply) => {
+    const userId = getAuthUserId(request);
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) return reply.status(404).send({ error: "User not found" });
+
+    return reply.send({
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        householdId: user.householdId,
+      }
+    });
   });
 }

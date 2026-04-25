@@ -7,6 +7,7 @@ import { authRoutes } from "./routes/auth.js";
 import { taskRoutes } from "./routes/tasks.js";
 import { prisma } from "./lib/prisma.js";
 import { debugRoutes } from "./routes/debug.js";
+import { demoRoutes } from "./routes/demo.js";
 import { aiRoutes } from "./routes/ai.js";
 import { householdRoutes } from "./routes/households.js";
 import { calendarRoutes } from "./routes/calendar.js";
@@ -69,7 +70,10 @@ async function main() {
   await app.register(taskRoutes,     { prefix: "/api" });
   await app.register(aiRoutes,       { prefix: "/api" });
   await app.register(householdRoutes,{ prefix: "/api" });
-  await app.register(debugRoutes,    { prefix: "/api/debug" });
+  await app.register(demoRoutes,     { prefix: "/api/demo" });
+  if (env.NODE_ENV !== "production") {
+    await app.register(debugRoutes, { prefix: "/api/debug" });
+  }
 
   await app.register(calendarRoutes, { prefix: "/api" });
   await app.ready();
