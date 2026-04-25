@@ -71,7 +71,6 @@
   &__right {
     flex: 1;
     position: relative;
-    padding-top: 10vh;
 
     @include respond-to($bp-desktop) {
       display: none;
@@ -80,8 +79,8 @@
 
   &__sticky {
     position: sticky;
-    top: 50%;
-    transform: translateY(-50%);
+    top: 120px;
+    margin-top: 80px;
   }
 }
 

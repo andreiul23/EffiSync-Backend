@@ -41,7 +41,11 @@ export const mockTasks = [
     id: '4',
     title: 'Gym session',
     description: 'Leg day workout',
-    date: (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0]; })(),
+    date: (() => {
+      const d = new Date();
+      d.setDate(d.getDate() + 1);
+      return d.toISOString().split('T')[0];
+    })(),
     startTime: '18:00',
     endTime: '19:30',
     color: '#904399',
@@ -52,7 +56,11 @@ export const mockTasks = [
     id: '5',
     title: 'Project deadline',
     description: 'Submit final deliverables',
-    date: (() => { const d = new Date(); d.setDate(d.getDate() + 3); return d.toISOString().split('T')[0]; })(),
+    date: (() => {
+      const d = new Date();
+      d.setDate(d.getDate() + 3);
+      return d.toISOString().split('T')[0];
+    })(),
     startTime: '16:00',
     endTime: '17:00',
     color: '#5D0E66',
@@ -63,7 +71,11 @@ export const mockTasks = [
     id: '6',
     title: 'Morning jog',
     description: 'Run in the park',
-    date: (() => { const d = new Date(); d.setDate(d.getDate() + 2); return d.toISOString().split('T')[0]; })(),
+    date: (() => {
+      const d = new Date();
+      d.setDate(d.getDate() + 2);
+      return d.toISOString().split('T')[0];
+    })(),
     startTime: '07:00',
     endTime: '07:45',
     color: '#904399',
@@ -269,7 +281,11 @@ export const mockGroupTasks = [
     aiSuggestedTime: null,
     groupId: 'g2',
     refusalCount: 0,
-    date: (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0]; })(),
+    date: (() => {
+      const d = new Date();
+      d.setDate(d.getDate() + 1);
+      return d.toISOString().split('T')[0];
+    })(),
   },
   {
     id: 'gt5',
@@ -284,7 +300,11 @@ export const mockGroupTasks = [
     aiSuggestedTime: '20:00 - 21:00',
     groupId: 'g3',
     refusalCount: 0,
-    date: (() => { const d = new Date(); d.setDate(d.getDate() + 2); return d.toISOString().split('T')[0]; })(),
+    date: (() => {
+      const d = new Date();
+      d.setDate(d.getDate() + 2);
+      return d.toISOString().split('T')[0];
+    })(),
   },
   {
     id: 'gt6',
@@ -299,17 +319,21 @@ export const mockGroupTasks = [
     aiSuggestedTime: null,
     groupId: 'g2',
     refusalCount: 0,
-    date: (() => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().split('T')[0]; })(),
+    date: (() => {
+      const d = new Date();
+      d.setDate(d.getDate() - 1);
+      return d.toISOString().split('T')[0];
+    })(),
   },
 ];
 
 // ---- Subscription Plans ----
 export const subscriptionPlans = [
   {
-    id: 'basic',
-    name: 'Basic',
-    price: 'Free',
-    period: '',
+    id: 'single',
+    name: 'Single Subscription',
+    price: '€4.99',
+    period: '/month',
     features: [
       'Personal calendar',
       'Task reminders',
@@ -320,12 +344,12 @@ export const subscriptionPlans = [
     featured: false,
   },
   {
-    id: 'premium',
-    name: 'Premium+',
-    price: '$9.99',
+    id: 'group',
+    name: 'Group',
+    price: '€9.99',
     period: '/month',
     features: [
-      'Everything in Basic',
+      'Everything in Single',
       'AI schedule suggestions',
       'Group sync (up to 5 groups)',
       'Smart task planning',
@@ -333,15 +357,15 @@ export const subscriptionPlans = [
       'Overlap detection',
       'Productivity insights',
     ],
-    featured: true,
+    featured: false,
   },
   {
     id: 'enterprise',
     name: 'Enterprise',
-    price: '$24.99',
+    price: '€99.99',
     period: '/month',
     features: [
-      'Everything in Premium+',
+      'Everything in Group',
       'Unlimited teams',
       'Custom workflows',
       'Advanced group planning',
@@ -359,7 +383,8 @@ export const productFeatures = [
     id: 'personal',
     title: 'Personal Calendar',
     subtitle: 'Your day, your way.',
-    description: 'Organize your routine, tasks, and reminders with an intuitive calendar designed around your life. Set your usual schedule once and let EffiSync build around it.',
+    description:
+      'Organize your routine, tasks, and reminders with an intuitive calendar designed around your life. Set your usual schedule once and let EffiSync build around it.',
     icon: '📅',
     visual: 'calendar',
   },
@@ -367,7 +392,8 @@ export const productFeatures = [
     id: 'groups',
     title: 'Smart Groups',
     subtitle: 'Sync with your people.',
-    description: "See your team's availability at a glance. Coordinate shared tasks, plan group events, and never double-book again. Everyone stays in the loop.",
+    description:
+      "See your team's availability at a glance. Coordinate shared tasks, plan group events, and never double-book again. Everyone stays in the loop.",
     icon: '👥',
     visual: 'groups',
   },
@@ -375,7 +401,8 @@ export const productFeatures = [
     id: 'ai',
     title: 'AI Assistant',
     subtitle: 'Your schedule, optimized.',
-    description: 'EffiSync detects overlaps, overtime, and idle time automatically. Get smart suggestions to redistribute tasks, balance workload, and make every hour count.',
+    description:
+      'EffiSync detects overlaps, overtime, and idle time automatically. Get smart suggestions to redistribute tasks, balance workload, and make every hour count.',
     icon: '🤖',
     visual: 'ai',
   },
@@ -383,7 +410,8 @@ export const productFeatures = [
     id: 'balance',
     title: 'Better Balance',
     subtitle: 'Work hard. Rest well.',
-    description: 'EffiSync protects your sleep, meals, breaks, and deep work time. Because productivity means nothing if you burn out getting there.',
+    description:
+      'EffiSync protects your sleep, meals, breaks, and deep work time. Because productivity means nothing if you burn out getting there.',
     icon: '⚖️',
     visual: 'balance',
   },
