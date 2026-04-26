@@ -17,6 +17,9 @@ export const apiFetch = async (url, options = {}) => {
   const token = localStorage.getItem('effisync_jwt') || localStorage.getItem('token');
   const headers = {
     'Content-Type': 'application/json',
+    // Bypass the ngrok free-tier browser warning page so API calls
+    // return JSON instead of HTML when the backend is tunneled via ngrok.
+    'ngrok-skip-browser-warning': 'true',
     ...options.headers,
   };
 
