@@ -128,8 +128,8 @@
   &__mobile-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.55);
-    backdrop-filter: blur(4px);
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(6px);
     z-index: 999;
     animation: fadeIn 0.2s ease;
   }
@@ -140,9 +140,10 @@
     right: 0;
     bottom: 0;
     width: min(80vw, 320px);
-    background: rgba(15, 5, 20, 0.95);
-    backdrop-filter: blur(20px);
-    border-left: 1px solid $glass-border;
+    background: #000;
+    backdrop-filter: none;
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: -8px 0 32px rgba(0, 0, 0, 0.6);
     z-index: 1000;
     padding: 80px $space-lg $space-lg;
     display: flex;
@@ -156,8 +157,8 @@
     width: 100%;
     text-align: left;
     padding: $space-md;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid $glass-border;
+    background: #0a0a0a;
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: $radius-md;
     color: $text-primary;
     font-size: $fs-md;
@@ -167,7 +168,7 @@
     transition: all $transition-fast;
 
     &:hover {
-      background: rgba($purple, 0.15);
+      background: #14101a;
       border-color: rgba($purple, 0.4);
     }
 

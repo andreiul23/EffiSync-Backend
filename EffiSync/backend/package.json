@@ -21,7 +21,10 @@
   "dependencies": {
     "@ai-sdk/google": "^3.0.64",
     "@effisync/shared": "workspace:*",
+    "@fastify/compress": "^8.3.1",
     "@fastify/cors": "^11.0.1",
+    "@fastify/helmet": "^13.0.2",
+    "@fastify/rate-limit": "^10.3.0",
     "@prisma/client": "^6.6.0",
     "ai": "^6.0.168",
     "bcrypt": "^6.0.0",

@@ -1,5 +1,8 @@
 import Fastify, { type FastifyError } from "fastify";
 import cors from "@fastify/cors";
+import helmet from "@fastify/helmet";
+import rateLimit from "@fastify/rate-limit";
+import compress from "@fastify/compress";
 import { env } from "./config/env.js";
 import { healthRoutes } from "./routes/health.route.js";
 import { chatRoutes } from "./routes/chat.js";
@@ -46,18 +49,59 @@ async function main() {
     allowedOrigins.push(env.FRONTEND_URL);
   }
 
+  // Dev allowlist: localhost on common Vite/CRA ports + anything in ALLOWED_ORIGINS / FRONTEND_URL.
+  const devAllowed = new Set<string>([
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    ...allowedOrigins,
+  ]);
+  const localhostRegex = /^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+):\d+$/;
+
   await app.register(cors, {
-    origin: env.NODE_ENV === "production"
-      ? (origin, cb) => {
-          // Same-origin / curl / server-to-server requests have no Origin header.
-          if (!origin) return cb(null, true);
-          if (allowedOrigins.includes(origin)) return cb(null, true);
-          return cb(new Error("Not allowed by CORS"), false);
-        }
-      : true, // dev: reflect any origin for convenience
+    origin: (origin, cb) => {
+      // Same-origin / curl / server-to-server requests have no Origin header.
+      if (!origin) return cb(null, true);
+      if (env.NODE_ENV === "production") {
+        if (allowedOrigins.includes(origin)) return cb(null, true);
+        return cb(new Error("Not allowed by CORS"), false);
+      }
+      // Dev: only allow whitelisted origins or local network IPs (no longer
+      // reflects ARBITRARY origins, which would have been a CSRF vector if
+      // the build accidentally shipped with NODE_ENV != production).
+      if (devAllowed.has(origin) || localhostRegex.test(origin)) return cb(null, true);
+      return cb(new Error("Not allowed by CORS (dev)"), false);
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
+  });
+
+  // Security headers (HSTS, CSP defaults, X-Frame-Options, etc.). CSP is
+  // permissive enough for the SPA dev experience; tighten in production if
+  // you serve the frontend from this origin.
+  await app.register(helmet, {
+    contentSecurityPolicy: false, // SPA is on a separate origin in dev
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  });
+
+  // Global low rate limit as a baseline. Auth routes get a stricter limit
+  // applied locally inside their plugin.
+  await app.register(rateLimit, {
+    global: true,
+    max: 300,
+    timeWindow: "1 minute",
+    allowList: (req) => req.url === "/health",
+  });
+
+  // Gzip / brotli responses. Saves significant bandwidth on JSON-heavy
+  // endpoints (task lists, household state). Threshold avoids overhead for
+  // tiny payloads.
+  await app.register(compress, {
+    global: true,
+    threshold: 1024,
+    encodings: ["br", "gzip", "deflate"],
   });
 
   // ── Global Error Handler ─────────────────────────────────

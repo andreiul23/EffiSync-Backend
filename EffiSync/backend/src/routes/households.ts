@@ -173,14 +173,15 @@ export async function householdRoutes(app: FastifyInstance) {
 
     const founderId = household.members[0]?.id ?? null;
 
-    // Strip the invite code from the response unless the requester is the founder
-    // — only the founder should ever see/share the code.
+    // Invite code is visible to ANY member of the household so anyone can
+    // share it and bring more people in. Non-members get null.
+    const isMember = household.members.some((m) => m.id === userId);
     const isFounder = founderId === userId;
     const safeHousehold = {
       ...household,
       founderId,
       isFounder,
-      inviteCode: isFounder ? household.inviteCode : null,
+      inviteCode: isMember ? household.inviteCode : null,
       // Drop updatedAt from each member to keep the API surface stable
       members: household.members.map(({ updatedAt: _u, ...m }) => m),
     };

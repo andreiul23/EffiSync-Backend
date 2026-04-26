@@ -27,14 +27,18 @@ export async function calendarRoutes(app: FastifyInstance) {
     const daysParam = Number((request.query as { days?: string })?.days);
     const days = Number.isFinite(daysParam) && daysParam > 0 && daysParam <= 30 ? daysParam : 3;
 
+    // "Next N days" = today + (N-1) following days, ending at end-of-day.
+    // Previous behaviour added N full 24h windows from `now` which yielded
+    // N+1 calendar days (today's remainder + N more), e.g. days=3 -> 4 days.
     const now = new Date();
     const horizon = new Date();
-    horizon.setDate(horizon.getDate() + days);
+    horizon.setHours(0, 0, 0, 0);
+    horizon.setDate(horizon.getDate() + days); // start of day N (exclusive)
 
     const events = await prisma.task.findMany({
       where: {
         assignedToId: userId,
-        dueDate: { gte: now, lte: horizon },
+        dueDate: { gte: now, lt: horizon },
       },
       select: {
         id: true,

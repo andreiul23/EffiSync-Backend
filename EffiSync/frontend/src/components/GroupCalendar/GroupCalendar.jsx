@@ -1,4 +1,5 @@
 import { useMemo, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import './GroupCalendar.scss';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -122,12 +123,37 @@ function GroupCalendar({ groupTasks = [], members = [] }) {
           </div>
         </div>
       </div>
-      {hover && (
+      {hover && typeof document !== 'undefined' && createPortal((() => {
+        const M = 12;
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        // Tooltip width matches the SCSS rule: min(320px, vw - 24px)
+        const TT_W = Math.min(320, vw - 24);
+        const TT_H_EST = 280;
+
+        let left = hover.x + 14;
+        if (left + TT_W + M > vw) {
+          left = hover.x - TT_W - 14;
+        }
+        left = Math.max(M, Math.min(left, vw - TT_W - M));
+
+        let top = hover.y - 10;
+        const useBelow = hover.y < TT_H_EST + M;
+        const translateY = useBelow ? '0' : '-100%';
+        if (useBelow) top = hover.y + 18;
+        if (useBelow) {
+          top = Math.max(M, Math.min(top, vh - TT_H_EST - M));
+        } else {
+          top = Math.max(TT_H_EST + M, Math.min(top, vh - M));
+        }
+
+        return (
         <div
           className="group-cal__floating-tooltip"
           style={{
-            left: hover.x + 14,
-            top: hover.y - 14,
+            left,
+            top,
+            transform: `translateY(${translateY})`,
             ['--tt-accent']: hover.block.color,
           }}
         >
@@ -199,7 +225,8 @@ function GroupCalendar({ groupTasks = [], members = [] }) {
             )}
           </div>
         </div>
-      )}
+        );
+      })(), document.body)}
     </div>
   );
 }

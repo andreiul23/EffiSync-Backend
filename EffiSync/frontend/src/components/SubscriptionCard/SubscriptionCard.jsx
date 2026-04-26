@@ -1,7 +1,17 @@
+import { useNavigate } from 'react-router-dom';
 import './SubscriptionCard.scss';
 
 function SubscriptionCard({ plan }) {
-  const { name, price, period, subtitle, features, featured } = plan;
+  const { id, name, price, period, subtitle, features, featured, cta } = plan;
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    if (id === 'enterprise') {
+      window.location.href = 'mailto:sales@effisync.app?subject=Enterprise%20plan%20inquiry';
+      return;
+    }
+    navigate(`/signup?plan=${id}`);
+  };
 
   return (
     <div className={`sub-card ${featured ? 'sub-card--featured' : ''}`}>
@@ -22,8 +32,12 @@ function SubscriptionCard({ plan }) {
           </li>
         ))}
       </ul>
-      <button className={`sub-card__btn ${featured ? 'sub-card__btn--primary' : ''}`}>
-        {featured ? 'Get Started' : 'Choose Plan'}
+      <button
+        type="button"
+        onClick={handleClick}
+        className={`sub-card__btn ${featured ? 'sub-card__btn--primary' : ''}`}
+      >
+        {cta || (featured ? 'Get Started' : 'Choose Plan')}
       </button>
     </div>
   );

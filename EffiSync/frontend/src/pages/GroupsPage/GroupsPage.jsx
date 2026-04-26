@@ -227,12 +227,12 @@ function GroupsDashboard({ user }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
           <span className="groups-page__subtitle">Group calendar &amp; tasks</span>
 
-          {/* Founder-only invite code chip — non-founders never see this */}
-          {household?.isFounder && household?.inviteCode && (
+          {/* Invite code chip — visible to ANY member so they can grow the group */}
+          {household?.inviteCode && (
             <button
               type="button"
               className="groups-page__invite-chip"
-              title="Click to copy — only the founder can see this code"
+              title="Click to copy and share with your roommates"
               onClick={async () => {
                 try {
                   await navigator.clipboard.writeText(household.inviteCode);
@@ -401,6 +401,8 @@ function GroupsDashboard({ user }) {
         isOpen={showMemberProfile}
         onClose={() => { setShowMemberProfile(false); setSelectedMember(null); }}
         member={selectedMember}
+        householdId={user.householdId}
+        currentUserId={user.id}
       />
     </div>
   );

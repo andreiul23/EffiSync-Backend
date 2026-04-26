@@ -67,8 +67,19 @@ export async function taskRoutes(app: FastifyInstance) {
 
     const { userId, householdId, type } = parsed.data;
 
+    // Allow viewing another user's tasks ONLY if they are in the same household.
+    // This powers the "see what this roommate is up to" view in the member modal.
     if (userId && userId !== authUserId) {
-      return reply.status(403).send({ error: "You can only query your own tasks" });
+      if (!authUser.householdId) {
+        return reply.status(403).send({ error: "You can only query your own tasks" });
+      }
+      const target = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { householdId: true },
+      });
+      if (!target || target.householdId !== authUser.householdId) {
+        return reply.status(403).send({ error: "That user is not in your household" });
+      }
     }
 
     if (householdId && householdId !== authUser.householdId) {
@@ -118,8 +129,8 @@ export async function taskRoutes(app: FastifyInstance) {
 
   app.post("/tasks", async (request, reply) => {
     const bodySchema = z.object({
-      title: z.string(),
-      description: z.string().optional(),
+      title: z.string().trim().min(1, "Title is required").max(200),
+      description: z.string().max(2000).optional(),
       difficulty: z.number().int().min(1).max(5).default(1),
       pointsValue: z.number().int().min(1).max(1000).optional(),
       category: z.enum(["CLEANING", "SHOPPING", "ADMINISTRATIVE", "PERSONAL_GROWTH", "OTHER"]).default("OTHER"),
@@ -195,8 +206,8 @@ export async function taskRoutes(app: FastifyInstance) {
   app.put("/tasks/:id", async (request, reply) => {
     const { id } = request.params as { id: string };
     const bodySchema = z.object({
-      title: z.string().optional(),
-      description: z.string().optional(),
+      title: z.string().trim().min(1, "Title cannot be empty").max(200).optional(),
+      description: z.string().max(2000).optional(),
       difficulty: z.number().int().min(1).max(5).optional(),
       category: z.enum(["CLEANING", "SHOPPING", "ADMINISTRATIVE", "PERSONAL_GROWTH", "OTHER"]).optional(),
       type: z.enum(["INDIVIDUAL", "GROUP"]).optional(),
@@ -295,7 +306,7 @@ export async function taskRoutes(app: FastifyInstance) {
 
     const existingTask = await prisma.task.findUnique({
       where: { id },
-      select: { householdId: true },
+      select: { householdId: true, createdById: true, assignedToId: true },
     });
 
     if (!existingTask) {
@@ -304,6 +315,12 @@ export async function taskRoutes(app: FastifyInstance) {
 
     if (!authUser.householdId || existingTask.householdId !== authUser.householdId) {
       return reply.status(403).send({ error: "You can only delete tasks in your household" });
+    }
+
+    // Only the task creator OR its current assignee can delete it. Prevents
+    // any household member from nuking everyone else's tasks.
+    if (existingTask.createdById !== authUserId && existingTask.assignedToId !== authUserId) {
+      return reply.status(403).send({ error: "Only the task creator or assignee can delete this task" });
     }
 
     try {

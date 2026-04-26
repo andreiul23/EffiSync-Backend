@@ -3,6 +3,14 @@
   border-radius: $radius-lg;
   overflow: hidden;
 
+  // On phones the 7-day week is unreadable if forced to fit. Allow horizontal
+  // scrolling and give the grid a sane minimum width so each column stays
+  // tappable. Header sticks while scrolling vertically.
+  @include respond-to($bp-tablet) {
+    overflow-x: auto;
+    @include scrollbar-custom();
+  }
+
   &__header {
     display: flex;
     border-bottom: 1px solid $glass-border;
@@ -10,6 +18,10 @@
     top: 0;
     z-index: 2;
     background: $bg-card;
+
+    @include respond-to($bp-tablet) {
+      min-width: 700px;
+    }
   }
 
   &__corner {
@@ -32,11 +44,19 @@
     max-height: 600px;
     overflow-y: auto;
     @include scrollbar-custom();
+
+    @include respond-to($bp-tablet) {
+      max-height: 480px;
+    }
   }
 
   &__body {
     display: flex;
     position: relative;
+
+    @include respond-to($bp-tablet) {
+      min-width: 700px;
+    }
   }
 
   &__times {
@@ -159,9 +179,9 @@
 
   &__floating-tooltip {
     position: fixed;
-    z-index: 9999;
+    z-index: 99999;
     transform: translateY(-100%);
-    width: 320px;
+    width: min(320px, calc(100vw - 24px));
     max-width: calc(100vw - 24px);
     background: $bg-elevated;
     border: 1px solid rgba(255,255,255,0.15);

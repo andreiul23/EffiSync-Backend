@@ -3,6 +3,13 @@
   max-width: 1400px;
   margin: 0 auto;
 
+  @include respond-to($bp-tablet) {
+    padding: 88px $space-md $space-md;
+  }
+  @include respond-to($bp-mobile) {
+    padding: 80px $space-sm $space-md;
+  }
+
   &__topbar {
     display: flex;
     align-items: center;
@@ -11,6 +18,10 @@
 
     @include respond-to($bp-tablet) {
       flex-wrap: wrap;
+      gap: $space-md;
+    }
+    @include respond-to($bp-mobile) {
+      gap: $space-sm;
     }
   }
 
@@ -20,6 +31,12 @@
 
   &__topbar-center {
     flex: 1;
+    min-width: 0;
+
+    @include respond-to($bp-tablet) {
+      order: 3;
+      flex-basis: 100%;
+    }
   }
 
   &__avatar {
@@ -44,6 +61,11 @@
     align-items: center;
     gap: $space-sm;
     max-width: 500px;
+
+    @include respond-to($bp-tablet) {
+      max-width: 100%;
+      width: 100%;
+    }
   }
 
   &__picker-select {
@@ -53,6 +75,8 @@
     cursor: pointer;
     appearance: auto;
     min-width: 80px;
+    min-height: 44px;
+    flex: 1;
   }
 
   &__picker-btn {
@@ -60,12 +84,18 @@
     padding: $space-sm $space-lg;
     font-size: $fs-sm;
     white-space: nowrap;
+    min-height: 44px;
   }
 
   &__groups-btn {
     @include button-primary();
     padding: $space-sm $space-xl;
     font-size: $fs-sm;
+    min-height: 44px;
+
+    @include respond-to($bp-mobile) {
+      padding: $space-sm $space-md;
+    }
   }
 
   &__controls {

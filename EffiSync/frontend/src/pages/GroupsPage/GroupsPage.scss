@@ -5,6 +5,10 @@
   position: relative;
   min-height: 100vh;
 
+  @media (max-width: $bp-tablet) {
+    padding: 88px $space-md $space-md;
+  }
+
   &__header {
     margin-bottom: $space-xl;
     text-align: center;
@@ -23,6 +27,10 @@
 
     @include respond-to($bp-desktop) {
       grid-template-columns: 1fr;
+    }
+
+    @media (max-width: $bp-tablet) {
+      gap: $space-md;
     }
   }
 
@@ -132,23 +140,37 @@
   &__my-task-actions { display: flex; gap: $space-sm; }
 
   &__btn-complete {
-    padding: 0.4rem 1rem;
+    padding: 0.55rem 1rem;
+    min-height: 40px;
     background: linear-gradient(135deg, #a855f7, #7c3aed);
     border: none; border-radius: $radius-sm;
     color: #fff; font-size: $fs-xs; font-weight: $fw-semibold;
     cursor: pointer; transition: opacity $transition-fast;
     &:hover { opacity: 0.85; }
     &:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    @media (max-width: $bp-tablet) {
+      padding: 0.7rem 1rem;
+      min-height: 44px;
+      font-size: $fs-sm;
+    }
   }
 
   &__btn-refuse {
-    padding: 0.4rem 1rem;
+    padding: 0.55rem 1rem;
+    min-height: 40px;
     background: rgba(255,255,255,0.06);
     border: 1px solid rgba(255,255,255,0.15);
     border-radius: $radius-sm;
     color: rgba(255,255,255,0.6); font-size: $fs-xs; font-weight: $fw-semibold;
     cursor: pointer; transition: all $transition-fast;
     &:hover { background: rgba(255,70,70,0.15); border-color: rgba(255,70,70,0.4); color: #f87171; }
+
+    @media (max-width: $bp-tablet) {
+      padding: 0.7rem 1rem;
+      min-height: 44px;
+      font-size: $fs-sm;
+    }
   }
 
   &__invite-chip {
@@ -231,6 +253,11 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: $space-lg;
+
+    @media (max-width: $bp-mobile) {
+      grid-template-columns: 1fr;
+      gap: $space-md;
+    }
   }
 }
 
