@@ -75,7 +75,7 @@ async function main() {
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization", "ngrok-skip-browser-warning"],
   });
 
   // Security headers (HSTS, CSP defaults, X-Frame-Options, etc.). CSP is

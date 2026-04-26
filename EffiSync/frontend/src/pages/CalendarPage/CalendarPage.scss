@@ -8,6 +8,7 @@
   }
   @include respond-to($bp-mobile) {
     padding: 80px $space-sm $space-md;
+    overflow-x: hidden;
   }
 
   &__topbar {
@@ -66,6 +67,23 @@
       max-width: 100%;
       width: 100%;
     }
+
+    // On mobile, dropdowns must shrink to fit and the Go button floats over
+    // the right edge as a circular FAB-style action.
+    @include respond-to($bp-mobile) {
+      position: relative;
+      gap: 6px;
+      padding-right: 52px; // reserve space for the floating Go button
+
+      .custom-dropdown {
+        min-width: 0;
+        flex: 1 1 0;
+      }
+      .custom-dropdown__control {
+        padding: $space-sm 6px;
+        font-size: $fs-xs;
+      }
+    }
   }
 
   &__picker-select {
@@ -85,6 +103,22 @@
     font-size: $fs-sm;
     white-space: nowrap;
     min-height: 44px;
+
+    @include respond-to($bp-mobile) {
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 44px;
+      height: 44px;
+      min-height: 44px;
+      padding: 0;
+      border-radius: 50%;
+      font-size: $fs-xs;
+      font-weight: $fw-bold;
+      box-shadow: 0 4px 14px rgba(168, 85, 247, 0.35);
+      z-index: 2;
+    }
   }
 
   &__groups-btn {

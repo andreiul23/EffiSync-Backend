@@ -47,6 +47,10 @@
 
     @include respond-to($bp-tablet) {
       max-height: 480px;
+      // Match body's min-width so the inner scroll container doesn't
+      // create its own X-scroll context — let the outer .group-cal handle
+      // horizontal scrolling so the header and body stay aligned.
+      min-width: 700px;
     }
   }
 
