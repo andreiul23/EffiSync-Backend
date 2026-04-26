@@ -77,6 +77,8 @@ function SignupPage() {
         placeholder={placeholder} value={form[name]}
         onChange={handleChange}
         autoComplete={name === 'confirmPassword' ? 'new-password' : name}
+        required aria-required="true"
+        aria-invalid={!!errors[name]}
       />
       {errors[name] && <span className="signup-page__error">{errors[name]}</span>}
     </div>
@@ -100,7 +102,7 @@ function SignupPage() {
             {renderField('password',        'Password',         'password', '••••••••')}
             {renderField('confirmPassword', 'Confirm password', 'password', '••••••••')}
 
-            <button type="submit" className="signup-page__submit" disabled={loading}>
+            <button type="submit" className="signup-page__submit" disabled={loading} aria-busy={loading}>
               {loading ? 'Creating account…' : 'SIGN UP'}
             </button>
           </form>

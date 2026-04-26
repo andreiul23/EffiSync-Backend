@@ -4,6 +4,7 @@ import Layout from './layout/Layout';
 import HomePage from './pages/HomePage/HomePage';
 import { useAuth } from './context/AuthContext';
 import { auth } from './services/api';
+import ProtectedRoute, { PublicOnlyRoute } from './components/ProtectedRoute/ProtectedRoute';
 
 const LoginPage = lazy(() => import('./pages/LoginPage/LoginPage'));
 const SignupPage = lazy(() => import('./pages/SignupPage/SignupPage'));
@@ -55,11 +56,11 @@ function App() {
       <Suspense fallback={<RouteLoader />}>
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<SignupPage />} />
-          <Route path="/calendar" element={<CalendarPage />} />
-          <Route path="/groups" element={<GroupsPage />} />
-          <Route path="/account" element={<AccountPage />} />
+          <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
+          <Route path="/signup" element={<PublicOnlyRoute><SignupPage /></PublicOnlyRoute>} />
+          <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
+          <Route path="/groups" element={<ProtectedRoute><GroupsPage /></ProtectedRoute>} />
+          <Route path="/account" element={<ProtectedRoute><AccountPage /></ProtectedRoute>} />
           <Route path="/dashboard" element={<DashboardRedirect />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

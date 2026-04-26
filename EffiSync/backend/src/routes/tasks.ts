@@ -107,7 +107,7 @@ export async function taskRoutes(app: FastifyInstance) {
       const tasks = await prisma.task.findMany({
         where,
         include: {
-          assignedTo: { select: { id: true, name: true } }
+          assignedTo: { select: { id: true, name: true, email: true } }
         }
       });
       return reply.send({ success: true, tasks });
@@ -125,7 +125,12 @@ export async function taskRoutes(app: FastifyInstance) {
       category: z.enum(["CLEANING", "SHOPPING", "ADMINISTRATIVE", "PERSONAL_GROWTH", "OTHER"]).default("OTHER"),
       type: z.enum(["INDIVIDUAL", "GROUP"]).default("INDIVIDUAL"),
       assignedToId: z.string().uuid().optional(),
-      dueDate: z.string().optional()
+      dueDate: z
+        .string()
+        .optional()
+        .refine((v) => v === undefined || !Number.isNaN(Date.parse(v)), {
+          message: "dueDate must be a valid ISO date string",
+        })
     });
 
     const parsed = bodySchema.safeParse(request.body);
@@ -196,7 +201,13 @@ export async function taskRoutes(app: FastifyInstance) {
       category: z.enum(["CLEANING", "SHOPPING", "ADMINISTRATIVE", "PERSONAL_GROWTH", "OTHER"]).optional(),
       type: z.enum(["INDIVIDUAL", "GROUP"]).optional(),
       assignedToId: z.string().uuid().optional().nullable(),
-      dueDate: z.string().optional().nullable(),
+      dueDate: z
+        .string()
+        .optional()
+        .nullable()
+        .refine((v) => v === undefined || v === null || !Number.isNaN(Date.parse(v)), {
+          message: "dueDate must be a valid ISO date string",
+        }),
       status: z.enum(["PENDING", "IN_PROGRESS", "AWAITING_REVIEW", "COMPLETED", "REJECTED"]).optional()
     });
 
@@ -313,17 +324,37 @@ export async function taskRoutes(app: FastifyInstance) {
     const userId = getAuthUserId(request);
 
     try {
-      const task = await prisma.task.findUnique({ where: { id } });
-      if (!task) return reply.status(404).send({ error: "Task not found" });
-      if (task.assignedToId !== userId) return reply.status(403).send({ error: "You can only complete tasks assigned to you" });
-      if (task.status === "COMPLETED") return reply.status(400).send({ error: "Task is already completed" });
-
+      // Race-safe completion: a single conditional update guards against
+      // double-clicks awarding points twice. Only one concurrent request
+      // can flip status from a non-COMPLETED state to COMPLETED.
       const updatedTask = await prisma.$transaction(async (tx) => {
-        const t = await tx.task.update({
-          where: { id },
+        const flipped = await tx.task.updateMany({
+          where: {
+            id,
+            assignedToId: userId,
+            status: { not: "COMPLETED" },
+          },
           data: { status: "COMPLETED" },
-          include: { assignedTo: { select: { id: true, name: true } } }
         });
+        if (flipped.count === 0) {
+          // Either the task doesn't exist, isn't ours, or is already completed.
+          // Distinguish for a cleaner error.
+          const existing = await tx.task.findUnique({
+            where: { id },
+            select: { id: true, assignedToId: true, status: true },
+          });
+          if (!existing) throw new Error("NOT_FOUND");
+          if (existing.assignedToId !== userId) throw new Error("FORBIDDEN");
+          if (existing.status === "COMPLETED") throw new Error("ALREADY_COMPLETED");
+          throw new Error("UPDATE_FAILED");
+        }
+
+        const t = await tx.task.findUnique({
+          where: { id },
+          include: { assignedTo: { select: { id: true, name: true, email: true } } },
+        });
+        if (!t) throw new Error("NOT_FOUND");
+
         await tx.user.update({
           where: { id: userId },
           data: { pointsBalance: { increment: t.pointsValue } },
@@ -336,6 +367,11 @@ export async function taskRoutes(app: FastifyInstance) {
 
       return reply.send({ success: true, task: updatedTask });
     } catch (err: unknown) {
+      if (err instanceof Error) {
+        if (err.message === "NOT_FOUND") return reply.status(404).send({ error: "Task not found" });
+        if (err.message === "FORBIDDEN") return reply.status(403).send({ error: "You can only complete tasks assigned to you" });
+        if (err.message === "ALREADY_COMPLETED") return reply.status(400).send({ error: "Task is already completed" });
+      }
       return reply.status(500).send({ error: "Failed to complete task" });
     }
   });

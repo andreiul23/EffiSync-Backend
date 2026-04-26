@@ -1,5 +1,4 @@
 import { useMemo, useState, useCallback } from 'react';
-import { mockMembers } from '../../mockData';
 import './GroupCalendar.scss';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -24,6 +23,8 @@ function GroupCalendar({ groupTasks = [], members = [] }) {
         let dayIdx = 0;
         let startHour = 9;
         let span = 1;
+        let startLabel = '';
+        let endLabel = '';
 
         if (task.dueDate) {
           const taskDate = new Date(task.dueDate);
@@ -32,16 +33,27 @@ function GroupCalendar({ groupTasks = [], members = [] }) {
           if (task.duration) {
             span = Math.max(task.duration / 60, 0.5); // Min 30 mins
           }
+          const fmt = (h) => {
+            const hh = Math.floor(h);
+            const mm = Math.round((h - hh) * 60);
+            return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
+          };
+          startLabel = fmt(startHour);
+          endLabel = fmt(startHour + span);
         } else if (task.aiSuggestedTime) {
           const timeStr = task.aiSuggestedTime;
           const [startStr, endStr] = timeStr.split(' - ').map(s => s.trim());
           startHour = parseInt(startStr.split(':')[0]) || 9;
           const endHour = parseInt(endStr.split(':')[0]) || startHour + 1;
           span = Math.max(endHour - startHour, 1);
+          startLabel = startStr || `${String(startHour).padStart(2,'0')}:00`;
+          endLabel = endStr || `${String(startHour + span).padStart(2,'0')}:00`;
         }
 
         // Get assignee name
         const assigneeName = task.assignedTo?.name?.split(' ')[0] || 'Unassigned';
+        const assigneeFull = task.assignedTo?.name || 'Unassigned';
+        const assigneeEmail = task.assignedTo?.email || '';
 
         const colors = ['#904399', '#5D0E66', '#F9C7FF', '#7B1FA2', '#B44BC7'];
         const colorIdx = members.findIndex(m => m.id === task.assignedToId);
@@ -50,6 +62,15 @@ function GroupCalendar({ groupTasks = [], members = [] }) {
           title: task.title,
           description: task.description,
           assigneeName,
+          assigneeFull,
+          assigneeEmail,
+          status: task.status,
+          category: task.category,
+          pointsValue: task.pointsValue,
+          difficulty: task.difficulty,
+          dueDate: task.dueDate,
+          startLabel,
+          endLabel,
           day: dayIdx,
           start: startHour,
           span,
@@ -107,11 +128,76 @@ function GroupCalendar({ groupTasks = [], members = [] }) {
           style={{
             left: hover.x + 14,
             top: hover.y - 14,
+            ['--tt-accent']: hover.block.color,
           }}
         >
-          <strong>{hover.block.title}</strong>
-          {hover.block.description && <p>{hover.block.description}</p>}
-          <span className="tooltip-assignee">Assigned to: {hover.block.assigneeName}</span>
+          <div className="group-cal__floating-tooltip-header">
+            <span
+              className="group-cal__floating-tooltip-dot"
+              style={{ background: hover.block.color }}
+            />
+            <strong>{hover.block.title}</strong>
+          </div>
+
+          {hover.block.description && (
+            <p className="group-cal__floating-tooltip-desc">{hover.block.description}</p>
+          )}
+
+          <div className="group-cal__floating-tooltip-grid">
+            {(hover.block.startLabel || hover.block.endLabel) && (
+              <>
+                <span className="group-cal__floating-tooltip-key">When</span>
+                <span className="group-cal__floating-tooltip-val">
+                  {WEEKDAYS[hover.block.day]} · {hover.block.startLabel}
+                  {hover.block.endLabel ? ` – ${hover.block.endLabel}` : ''}
+                </span>
+              </>
+            )}
+
+            <span className="group-cal__floating-tooltip-key">Assigned</span>
+            <span className="group-cal__floating-tooltip-val">
+              {hover.block.assigneeFull}
+              {hover.block.assigneeEmail && (
+                <span className="group-cal__floating-tooltip-sub">{hover.block.assigneeEmail}</span>
+              )}
+            </span>
+
+            {hover.block.category && (
+              <>
+                <span className="group-cal__floating-tooltip-key">Category</span>
+                <span className="group-cal__floating-tooltip-val">{hover.block.category}</span>
+              </>
+            )}
+
+            {typeof hover.block.pointsValue === 'number' && (
+              <>
+                <span className="group-cal__floating-tooltip-key">Reward</span>
+                <span className="group-cal__floating-tooltip-val">
+                  <span className="group-cal__floating-tooltip-pill group-cal__floating-tooltip-pill--points">
+                    {hover.block.pointsValue} pts
+                  </span>
+                  {typeof hover.block.difficulty === 'number' && (
+                    <span className="group-cal__floating-tooltip-pill">
+                      Difficulty {hover.block.difficulty}/5
+                    </span>
+                  )}
+                </span>
+              </>
+            )}
+
+            {hover.block.status && (
+              <>
+                <span className="group-cal__floating-tooltip-key">Status</span>
+                <span className="group-cal__floating-tooltip-val">
+                  <span
+                    className={`group-cal__floating-tooltip-pill group-cal__floating-tooltip-pill--status group-cal__floating-tooltip-pill--${String(hover.block.status).toLowerCase()}`}
+                  >
+                    {hover.block.status}
+                  </span>
+                </span>
+              </>
+            )}
+          </div>
         </div>
       )}
     </div>

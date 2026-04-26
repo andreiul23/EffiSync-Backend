@@ -21,7 +21,10 @@ export async function householdRoutes(app: FastifyInstance) {
     const user = await prisma.user.findUnique({ where: { id: createdById } });
     if (!user) return reply.status(404).send({ error: "User not found" });
 
-    const inviteCode = randomBytes(4).toString("hex").toUpperCase(); // e.g. "A1B2C3D4"
+    // 8 random bytes → 16 hex chars → 64 bits of entropy. Far above the
+    // previous 32-bit (4 byte) code which was brute-forceable in ~seconds
+    // against a public join endpoint. Uppercased for friendly display.
+    const inviteCode = randomBytes(8).toString("hex").toUpperCase();
 
     const household = await prisma.household.create({
       data: {
@@ -156,12 +159,33 @@ export async function householdRoutes(app: FastifyInstance) {
     const household = await prisma.household.findUnique({
       where: { id },
       include: {
-        members: { select: { id: true, name: true, email: true, pointsBalance: true } },
+        // Sort members by joinedAt-ish proxy: the founder's User row was the
+        // first to be linked to this household, so its updatedAt is earliest.
+        // (No migration needed — the schema already has updatedAt on User.)
+        members: {
+          select: { id: true, name: true, email: true, pointsBalance: true, updatedAt: true },
+          orderBy: { updatedAt: "asc" },
+        },
       },
     });
 
     if (!household) return reply.status(404).send({ error: "Household not found" });
-    return reply.send({ success: true, household });
+
+    const founderId = household.members[0]?.id ?? null;
+
+    // Strip the invite code from the response unless the requester is the founder
+    // — only the founder should ever see/share the code.
+    const isFounder = founderId === userId;
+    const safeHousehold = {
+      ...household,
+      founderId,
+      isFounder,
+      inviteCode: isFounder ? household.inviteCode : null,
+      // Drop updatedAt from each member to keep the API surface stable
+      members: household.members.map(({ updatedAt: _u, ...m }) => m),
+    };
+
+    return reply.send({ success: true, household: safeHousehold });
   });
 
   // ── Shop & Leaderboard ─────────────────────────────────
@@ -215,31 +239,43 @@ export async function householdRoutes(app: FastifyInstance) {
     const reward = SHOP_REWARDS.find((r) => r.id === parsed.data.rewardId);
     if (!reward) return reply.status(404).send({ error: "Reward not found" });
 
-    if (user.pointsBalance < reward.price) {
-      return reply.status(400).send({ error: "Not enough points" });
-    }
-
     try {
-      const [updated] = await prisma.$transaction([
-        prisma.user.update({
-          where: { id: user.id },
+      // Race-safe: do the balance check INSIDE an atomic conditional update.
+      // Two concurrent purchases can no longer both succeed because the
+      // `pointsBalance: { gte: reward.price }` predicate is evaluated by
+      // Postgres in the same row update.
+      const result = await prisma.$transaction(async (tx) => {
+        const updated = await tx.user.updateMany({
+          where: { id: user.id, pointsBalance: { gte: reward.price } },
           data: { pointsBalance: { decrement: reward.price } },
-          select: { id: true, pointsBalance: true },
-        }),
-        prisma.pointsTransaction.create({
+        });
+        if (updated.count === 0) {
+          // No row matched → balance was insufficient at write time.
+          throw new Error("INSUFFICIENT_POINTS");
+        }
+        const fresh = await tx.user.findUnique({
+          where: { id: user.id },
+          select: { pointsBalance: true },
+        });
+        await tx.pointsTransaction.create({
           data: {
             userId: user.id,
             amount: -reward.price,
             reason: `Shop purchase: ${reward.title}`,
           },
-        }),
-      ]);
+        });
+        return fresh;
+      });
+
       return reply.send({
         success: true,
         reward,
-        newBalance: updated.pointsBalance,
+        newBalance: result?.pointsBalance ?? 0,
       });
     } catch (err) {
+      if (err instanceof Error && err.message === "INSUFFICIENT_POINTS") {
+        return reply.status(400).send({ error: "Not enough points", code: "INSUFFICIENT_POINTS" });
+      }
       app.log.error(err, "Shop purchase failed");
       return reply.status(500).send({ error: "Failed to purchase reward" });
     }

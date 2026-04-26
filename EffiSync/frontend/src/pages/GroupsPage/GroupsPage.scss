@@ -150,6 +150,46 @@
     cursor: pointer; transition: all $transition-fast;
     &:hover { background: rgba(255,70,70,0.15); border-color: rgba(255,70,70,0.4); color: #f87171; }
   }
+
+  &__invite-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.7rem 0.4rem 0.85rem;
+    background: linear-gradient(135deg, rgba(168,85,247,0.18), rgba(124,58,237,0.18));
+    border: 1px solid rgba(168,85,247,0.45);
+    border-radius: 999px;
+    color: #fff;
+    font-size: $fs-xs;
+    font-weight: $fw-semibold;
+    cursor: pointer;
+    transition: transform $transition-fast, box-shadow $transition-fast, border-color $transition-fast;
+
+    &:hover {
+      border-color: rgba(168,85,247,0.85);
+      box-shadow: 0 4px 18px rgba(168,85,247,0.35);
+      transform: translateY(-1px);
+    }
+
+    &-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.6);
+    }
+
+    &-value {
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: 0.85rem;
+      letter-spacing: 0.05em;
+      color: #fff;
+      background: rgba(0,0,0,0.25);
+      padding: 0.15rem 0.5rem;
+      border-radius: 6px;
+    }
+
+    &-icon { font-size: 0.85rem; opacity: 0.85; }
+  }
 }
 
 @keyframes spin {

@@ -27,7 +27,12 @@ export const apiFetch = async (url, options = {}) => {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(data.message || data.error || 'An error occurred during the request');
+    // Attach the parsed body + status so callers can branch on
+    // server-provided error codes (e.g. `e.body.code === 'NO_GMAIL_LINKED'`).
+    const err = new Error(data.message || data.error || 'An error occurred during the request');
+    err.status = response.status;
+    err.body = data;
+    throw err;
   }
 
   return data;

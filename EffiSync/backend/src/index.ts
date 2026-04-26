@@ -34,8 +34,27 @@ async function main() {
   });
 
   // ── Plugins ─────────────────────────────────────────────
+  // CORS: in development reflect the request origin (smooth DX). In production
+  // enforce an allowlist if ALLOWED_ORIGINS is set; otherwise fall back to
+  // FRONTEND_URL only. This closes the open-CORS hole that would otherwise
+  // let any site script the API with the user's session.
+  const allowedOrigins = (env.ALLOWED_ORIGINS ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (allowedOrigins.length === 0 && env.FRONTEND_URL) {
+    allowedOrigins.push(env.FRONTEND_URL);
+  }
+
   await app.register(cors, {
-    origin: true, // Reflects the request origin (supports credentials, unlike "*")
+    origin: env.NODE_ENV === "production"
+      ? (origin, cb) => {
+          // Same-origin / curl / server-to-server requests have no Origin header.
+          if (!origin) return cb(null, true);
+          if (allowedOrigins.includes(origin)) return cb(null, true);
+          return cb(new Error("Not allowed by CORS"), false);
+        }
+      : true, // dev: reflect any origin for convenience
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -80,6 +99,16 @@ async function main() {
   await app.register(calendarRoutes, { prefix: "/api" });
   await app.ready();
   app.log.info(app.printRoutes({ commonPrefix: false }));
+
+  // ── Crash guards ────────────────────────────────────────
+  // A stray unhandled rejection (e.g. fire-and-forget email helper without
+  // a .catch()) must NEVER kill the API process. Log and keep serving.
+  process.on("unhandledRejection", (reason) => {
+    app.log.warn({ reason }, "Unhandled promise rejection (suppressed)");
+  });
+  process.on("uncaughtException", (err) => {
+    app.log.error({ err }, "Uncaught exception (suppressed)");
+  });
 
   // Start background jobs
   startCronJobs();

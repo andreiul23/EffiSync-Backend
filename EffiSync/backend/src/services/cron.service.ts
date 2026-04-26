@@ -5,7 +5,7 @@ import { geminiModel } from "../lib/ai.js";
 import { sendRealEmailViaGmail } from "./email.service.js";
 import { env } from "../config/env.js";
 
-export async function generateHouseholdReport(householdId: string) {
+export async function generateHouseholdReport(householdId: string, preferredSenderId?: string) {
   if (env.SAFE_MODE) {
     return { success: true, message: "SAFE_MODE enabled: report generation is disabled" };
   }
@@ -59,23 +59,65 @@ Return ONLY valid HTML. Do not use markdown code blocks (like \`\`\`html), just 
     // Strip markdown code fences if the AI wraps the HTML in them
     htmlContent = htmlContent.replace(/^```(?:html)?\s*\n?/i, "").replace(/\n?\s*```\s*$/i, "").trim();
 
-    const sender = members.find(m => m.googleRefreshToken !== null);
+    // Prefer the explicit caller (the founder/clicker) if they have Gmail linked.
+    // Fall back to ANY household member that has a Google refresh token.
+    let sender = preferredSenderId
+      ? members.find(m => m.id === preferredSenderId && m.googleRefreshToken)
+      : undefined;
+    if (!sender) sender = members.find(m => m.googleRefreshToken !== null);
+
     if (!sender) {
-      console.error(`Cannot send report for household ${householdId}: No user with Google Refresh Token.`);
-      return { success: false, message: "No sender found with Google Refresh Token" };
+      const msg =
+        "No household member has linked Google. Sign in with Google (or have any member do so) to enable email reports.";
+      console.error(`Cannot send report for household ${householdId}: ${msg}`);
+      return { success: false, message: msg, code: "NO_GMAIL_LINKED" as const };
     }
 
+    const errors: Array<{ to: string; error: string }> = [];
+    let sentCount = 0;
+
     for (const member of members) {
-      if (member.email) {
-        await sendRealEmailViaGmail(sender.id, member.email, "🏆 Raportul Săptămânal EffiSync - Cine a dominat casa?", htmlContent);
+      if (!member.email) continue;
+      try {
+        await sendRealEmailViaGmail(
+          sender.id,
+          member.email,
+          "🏆 Raportul Săptămânal EffiSync - Cine a dominat casa?",
+          htmlContent,
+        );
+        sentCount += 1;
+      } catch (err) {
+        errors.push({
+          to: member.email,
+          error: err instanceof Error ? err.message : String(err),
+        });
       }
     }
 
-    console.log(`Weekly report sent for household ${householdId}`);
-    return { success: true, message: "Report generated and emails sent!" };
+    if (sentCount === 0) {
+      return {
+        success: false,
+        message: "Email sending failed for every recipient.",
+        code: "ALL_RECIPIENTS_FAILED" as const,
+        errors,
+      };
+    }
+
+    console.log(`Weekly report sent for household ${householdId} (sent=${sentCount}, failed=${errors.length})`);
+    return {
+      success: true,
+      message: `Report sent to ${sentCount} member(s)${errors.length ? ` (${errors.length} failed)` : ""}.`,
+      sender: sender.email,
+      sentCount,
+      errors,
+    };
   } catch (error) {
     console.error(`Error generating report for household ${householdId}:`, error);
-    return { success: false, error: "Report generation failed" };
+    return {
+      success: false,
+      error: "Report generation failed",
+      details: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 

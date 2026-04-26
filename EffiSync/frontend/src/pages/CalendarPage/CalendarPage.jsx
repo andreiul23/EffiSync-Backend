@@ -11,14 +11,13 @@ import CreateGroupModal from '../../components/CreateGroupModal/CreateGroupModal
 import JoinGroupModal from '../../components/JoinGroupModal/JoinGroupModal';
 import CustomDropdown from '../../components/CustomDropdown/CustomDropdown';
 import { useToast } from '../../components/Toast/ToastProvider';
-import { mockTasks as initialTasks } from '../../mockData';
 import './CalendarPage.scss';
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
 function CalendarPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, login } = useAuth();
   const toast = useToast();
   const today = new Date();
 
@@ -145,6 +144,7 @@ function CalendarPage() {
     setSelectedDay(dayData);
     setShowDayPreview(true);
     setIsClosingPreview(false);
+    if (dayData?.date) setHighlightDate(dayData.date);
   };
 
   const handleClosePreview = () => {
@@ -259,8 +259,46 @@ function CalendarPage() {
     }
   };
 
-  const handleJoinGroup = () => {
-    setJoinGroupModal(false);
+  const handleJoinGroup = async (code) => {
+    const trimmed = (code || '').trim();
+    if (!trimmed) {
+      toast.error('Please enter an invite code.');
+      return;
+    }
+    try {
+      const data = await households.join({ inviteCode: trimmed, userId: user?.id });
+      const joinedId = data?.householdId;
+      if (!joinedId) throw new Error(data?.error || 'Invalid invite code');
+
+      // Update auth context so the rest of the app knows we have a household.
+      if (user) {
+        const next = { ...user, householdId: joinedId };
+        login(next);
+      }
+
+      // Refresh the visible group so the user can see the household they joined.
+      try {
+        const resp = await households.getById(joinedId);
+        // Backend returns { success, household }. Older callers used the bare
+        // household, so accept both shapes defensively.
+        const fresh = resp?.household ?? resp;
+        if (fresh && fresh.id) {
+          setGroups([{
+            ...fresh,
+            name: fresh.name || data?.householdName || 'Household',
+            members: Array.isArray(fresh.members) ? fresh.members : [],
+          }]);
+        }
+      } catch (e) {
+        console.warn('Could not load joined household details:', e);
+      }
+
+      toast.success(data.householdName ? `Joined "${data.householdName}"!` : 'Joined household!');
+      setJoinGroupModal(false);
+    } catch (err) {
+      console.error('Join household failed:', err);
+      toast.error(err?.message || 'Invalid invite code');
+    }
   };
 
   const selectedDayTasks = useMemo(() => {
@@ -271,17 +309,6 @@ function CalendarPage() {
   const nameStr = user?.name || 'Alex Popescu';
   const nameParts = nameStr.split(' ');
   const initials = `${nameParts[0]?.[0] || ''}${nameParts[1]?.[0] || ''}`.toUpperCase() || 'AP';
-
-  // Close menus on outside click
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (groupsMenu) {
-        // GroupsSliderMenu handles its own backdrop click
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [groupsMenu]);
 
   return (
     <div className="calendar-page">
@@ -336,7 +363,7 @@ function CalendarPage() {
         </button>
       </div>
 
-      {/* Calendar grid + day preview */}
+      {/* Calendar grid + day preview (click a day to open) */}
       <div className="calendar-page__content">
         <div className={`calendar-page__grid-wrapper ${showDayPreview ? '' : 'calendar-page__grid-wrapper--full'}`}>
           <CalendarGrid
@@ -366,8 +393,12 @@ function CalendarPage() {
               <div className="calendar-page__task-list">
                 <h4>Tasks</h4>
                 {selectedDayTasks.map(task => (
-                  <button key={task.id} className="calendar-page__task-item"
-                    onClick={() => handleEditTask(task)} style={{ borderLeftColor: task.color }}>
+                  <button
+                    key={task.id}
+                    className="calendar-page__task-item"
+                    onClick={() => handleEditTask(task)}
+                    style={{ borderLeftColor: task.color }}
+                  >
                     <span className={task.done ? 'calendar-page__task-done' : ''}>{task.title}</span>
                     <span className="calendar-page__task-time">{task.startTime} - {task.endTime}</span>
                   </button>

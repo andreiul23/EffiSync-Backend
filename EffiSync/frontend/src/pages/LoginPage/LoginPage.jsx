@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { auth, demo } from '../../services/api';
 import { useToast } from '../../components/Toast/ToastProvider';
@@ -10,6 +10,8 @@ import './LoginPage.scss';
 
 function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const redirectTo = location.state?.from || '/groups';
   const { login } = useAuth();
   const toast = useToast();
   const [form, setForm] = useState({ email: '', password: '' });
@@ -46,7 +48,7 @@ function LoginPage() {
       const u = data.user || { id: data.userId, email: form.email, householdId: data.householdId ?? null };
       login(u);
       toast.success(`Welcome back${u.name ? `, ${u.name.split(' ')[0]}` : ''}!`);
-      navigate('/groups');
+      navigate(redirectTo, { replace: true });
     } catch (error) {
       const msg = error?.message || 'Login failed. Please try again.';
       // Backend tells us when an account is OAuth-only (Google / GitHub)
@@ -72,7 +74,7 @@ function LoginPage() {
       localStorage.setItem('effisync_jwt', data.token);
       login(data.user);
       toast.success(data.message || 'Demo loaded!');
-      navigate('/groups');
+      navigate(redirectTo, { replace: true });
     } catch (error) {
       toast.error(error.message || 'Could not start the demo. Try again.');
     } finally {
@@ -122,6 +124,8 @@ function LoginPage() {
                 id="login-email" type="email" name="email"
                 placeholder="you@example.com" value={form.email}
                 onChange={handleChange} autoComplete="email"
+                required aria-required="true"
+                aria-invalid={!!errors.email}
               />
               {errors.email && <span className="login-page__error">{errors.email}</span>}
             </div>
@@ -133,11 +137,13 @@ function LoginPage() {
                 id="login-password" type="password" name="password"
                 placeholder="••••••••" value={form.password}
                 onChange={handleChange} autoComplete="current-password"
+                required aria-required="true"
+                aria-invalid={!!errors.password}
               />
               {errors.password && <span className="login-page__error">{errors.password}</span>}
             </div>
 
-            <button type="submit" className="login-page__submit" disabled={loading}>
+            <button type="submit" className="login-page__submit" disabled={loading} aria-busy={loading}>
               {loading ? 'Logging in…' : 'LOG IN'}
             </button>
           </form>

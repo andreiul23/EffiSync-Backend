@@ -10,10 +10,12 @@
   &--featured {
     @include glow-border($purple, 2px);
     background: linear-gradient(165deg, rgba($purple, 0.12), rgba($purple-deep, 0.06), $bg-card);
-    transform: scale(1.05);
+    // Tone down the up-scale so it doesn't crash into siblings on the grid.
+    transform: scale(1.03);
+    z-index: 2;
 
     &:hover {
-      transform: scale(1.08) translateY(-4px);
+      transform: scale(1.05) translateY(-4px);
     }
 
     .sub-card__name {
@@ -22,17 +24,20 @@
   }
 
   &__badge {
+    // Pill in the top-right corner (no more rotated banner that clipped).
     position: absolute;
     top: $space-md;
-    right: -30px;
+    right: $space-md;
     background: $gradient-accent;
     color: $white-off;
-    font-size: $fs-xs;
+    font-size: 0.65rem;
     font-weight: $fw-bold;
-    padding: $space-xs $space-2xl;
-    transform: rotate(35deg);
+    padding: 0.3rem 0.7rem;
+    border-radius: $radius-pill;
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 0.08em;
+    box-shadow: 0 4px 14px rgba($purple, 0.35);
+    z-index: 3;
   }
 
   &__header {
@@ -68,6 +73,13 @@
   &__period {
     font-size: $fs-sm;
     color: $text-muted;
+  }
+
+  &__subtitle {
+    margin: $space-xs 0 0;
+    font-size: $fs-sm;
+    color: $text-muted;
+    letter-spacing: 0.01em;
   }
 
   &__features {

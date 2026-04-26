@@ -1,7 +1,7 @@
 import './SubscriptionCard.scss';
 
 function SubscriptionCard({ plan }) {
-  const { name, price, period, features, featured } = plan;
+  const { name, price, period, subtitle, features, featured } = plan;
 
   return (
     <div className={`sub-card ${featured ? 'sub-card--featured' : ''}`}>
@@ -12,6 +12,7 @@ function SubscriptionCard({ plan }) {
           <span className="sub-card__amount">{price}</span>
           {period && <span className="sub-card__period">{period}</span>}
         </div>
+        {subtitle && <p className="sub-card__subtitle">{subtitle}</p>}
       </div>
       <ul className="sub-card__features">
         {features.map((feature, i) => (
