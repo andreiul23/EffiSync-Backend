@@ -58,8 +58,7 @@
   &__fab {
     position: fixed;
     bottom: $space-xl;
-    left: 50%;
-    transform: translateX(-50%);
+    right: $space-xl;
     width: 56px; height: 56px;
     border-radius: $radius-round;
     background: $gradient-accent;
@@ -68,13 +67,19 @@
     border: none;
     cursor: pointer;
     box-shadow: $shadow-lg, $shadow-glow;
-    transition: all $transition-base;
+    transition: opacity 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
     z-index: $z-sticky;
     @include flex-center();
 
     &:hover {
-      transform: translateX(-50%) translateY(-4px) scale(1.1);
+      transform: translateY(-4px) scale(1.1);
       box-shadow: $shadow-xl, $shadow-glow-strong;
+    }
+
+    &--hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.8) translateY(20px);
     }
   }
 
@@ -149,4 +154,172 @@
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+
+// === Shop & Leaderboard sections ===
+.groups-page {
+  &__section {
+    margin-top: $space-2xl;
+    padding: $space-xl;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid $glass-border;
+    border-radius: $radius-lg;
+  }
+
+  &__section-header {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: $space-lg;
+  }
+
+  &__section-title {
+    font-family: $font-heading;
+    font-size: $fs-2xl;
+    font-weight: $fw-bold;
+    color: $text-primary;
+    margin: 0;
+  }
+
+  &__section-sub {
+    font-size: $fs-sm;
+    color: $text-muted;
+  }
+
+  &__shop-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: $space-lg;
+  }
+}
+
+.reward-card {
+  background: $bg-card;
+  border: 1px solid $glass-border;
+  border-radius: $radius-md;
+  padding: $space-lg;
+  display: flex;
+  flex-direction: column;
+  gap: $space-sm;
+  transition: transform $transition-base, border-color $transition-base, box-shadow $transition-base;
+
+  &:hover {
+    transform: translateY(-2px);
+    border-color: $glass-border-strong;
+    box-shadow: $shadow-md;
+  }
+
+  &__icon {
+    font-size: 2rem;
+    line-height: 1;
+  }
+
+  &__title {
+    font-family: $font-heading;
+    font-size: $fs-md;
+    font-weight: $fw-semibold;
+    color: $text-primary;
+    margin: 0;
+  }
+
+  &__desc {
+    font-size: $fs-xs;
+    color: $text-muted;
+    line-height: 1.4;
+    margin: 0;
+    flex: 1;
+  }
+
+  &__buy {
+    margin-top: $space-sm;
+    padding: $space-sm $space-md;
+    border: none;
+    border-radius: $radius-md;
+    background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);
+    color: white;
+    font-weight: $fw-bold;
+    font-size: $fs-sm;
+    cursor: pointer;
+    transition: transform $transition-fast, box-shadow $transition-fast, opacity $transition-fast;
+
+    &:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(34,197,94,0.4);
+    }
+
+    &:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      background: rgba(255,255,255,0.08);
+      color: $text-muted;
+    }
+  }
+
+  &--locked {
+    opacity: 0.7;
+  }
+}
+
+.leaderboard-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: $space-sm;
+}
+
+.leaderboard-row {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  align-items: center;
+  gap: $space-md;
+  padding: $space-md $space-lg;
+  background: $bg-card;
+  border: 1px solid $glass-border;
+  border-radius: $radius-md;
+  transition: border-color $transition-base, transform $transition-base;
+
+  &:hover { border-color: $glass-border-strong; transform: translateX(2px); }
+
+  &--me {
+    border-color: rgba(168,85,247,0.55);
+    background: linear-gradient(90deg, rgba(168,85,247,0.10), $bg-card 60%);
+  }
+
+  &__rank {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: $fw-bold;
+    font-size: $fs-md;
+    color: #0b0b14;
+    background: rgba(255,255,255,0.08);
+    color: $text-primary;
+
+    &--gold   { background: linear-gradient(135deg,#facc15,#f59e0b); color:#0b0b14; }
+    &--silver { background: linear-gradient(135deg,#e5e7eb,#9ca3af); color:#0b0b14; }
+    &--bronze { background: linear-gradient(135deg,#f59e0b,#b45309); color:#0b0b14; }
+  }
+
+  &__name {
+    font-weight: $fw-semibold;
+    color: $text-primary;
+  }
+
+  &__you {
+    color: $text-muted;
+    font-style: normal;
+    font-size: $fs-xs;
+    margin-left: 4px;
+  }
+
+  &__pts {
+    font-weight: $fw-bold;
+    color: #a855f7;
+  }
 }

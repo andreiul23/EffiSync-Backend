@@ -39,16 +39,26 @@ function LoginPage() {
     setLoading(true);
     try {
       const data = await auth.login({ email: form.email, password: form.password });
-      // data = { success: true, userId: "..." }
       if (data.token) {
         localStorage.setItem('effisync_jwt', data.token);
       }
-      login({ id: data.userId, email: form.email, householdId: data.householdId ?? null });
-      toast.success(`Welcome back!`);
+      // Prefer the full user object returned by the backend
+      const u = data.user || { id: data.userId, email: form.email, householdId: data.householdId ?? null };
+      login(u);
+      toast.success(`Welcome back${u.name ? `, ${u.name.split(' ')[0]}` : ''}!`);
       navigate('/groups');
     } catch (error) {
-      toast.error(error.message || 'Login failed. Please try again.');
-      setErrors({ email: error.message || 'Login failed. Please try again.' });
+      const msg = error?.message || 'Login failed. Please try again.';
+      // Backend tells us when an account is OAuth-only (Google / GitHub)
+      const isOAuthOnly = /created with (google|github)/i.test(msg);
+      const looksLikeGmail = /@gmail\.com\s*$/i.test(form.email);
+      if (isOAuthOnly || looksLikeGmail) {
+        toast.error('This email uses Google sign-in. Use “Continue with Google” above.');
+        setErrors({ email: 'Use “Continue with Google” for this account.' });
+      } else {
+        toast.error(msg);
+        setErrors({ email: msg });
+      }
     } finally {
       setLoading(false);
     }

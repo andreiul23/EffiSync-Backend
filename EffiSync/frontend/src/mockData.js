@@ -306,10 +306,10 @@ export const mockGroupTasks = [
 // ---- Subscription Plans ----
 export const subscriptionPlans = [
   {
-    id: 'basic',
-    name: 'Basic',
-    price: 'Free',
-    period: '',
+    id: 'single',
+    name: 'Single Subscription',
+    price: '€4.99',
+    period: '/month',
     features: [
       'Personal calendar',
       'Task reminders',
@@ -320,12 +320,12 @@ export const subscriptionPlans = [
     featured: false,
   },
   {
-    id: 'premium',
-    name: 'Premium+',
-    price: '$9.99',
+    id: 'group',
+    name: 'Group',
+    price: '€9.99',
     period: '/month',
     features: [
-      'Everything in Basic',
+      'Everything in Single',
       'AI schedule suggestions',
       'Group sync (up to 5 groups)',
       'Smart task planning',
@@ -333,15 +333,15 @@ export const subscriptionPlans = [
       'Overlap detection',
       'Productivity insights',
     ],
-    featured: true,
+    featured: false,
   },
   {
     id: 'enterprise',
     name: 'Enterprise',
-    price: '$24.99',
+    price: '€99.99',
     period: '/month',
     features: [
-      'Everything in Premium+',
+      'Everything in Group',
       'Unlimited teams',
       'Custom workflows',
       'Advanced group planning',

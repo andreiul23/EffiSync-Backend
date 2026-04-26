@@ -71,7 +71,7 @@
   &__right {
     flex: 1;
     position: relative;
-    padding-top: 10vh;
+    padding-top: 0;
 
     @include respond-to($bp-desktop) {
       display: none;
@@ -80,17 +80,24 @@
 
   &__sticky {
     position: sticky;
-    top: 50%;
-    transform: translateY(-50%);
+    top: 100px;
+    height: calc(100vh - 140px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 }
 
-// Sticky Visuals
+// Sticky Visuals — fixed dimensions across all variants for consistency
 .sticky-visual {
   @include glass-strong();
   border-radius: $radius-xl;
   padding: $space-xl;
-  min-height: 300px;
+  width: 100%;
+  max-width: 480px;
+  height: 420px;
+  box-sizing: border-box;
+  overflow: hidden;
   @include flex-center();
 
   &--calendar {

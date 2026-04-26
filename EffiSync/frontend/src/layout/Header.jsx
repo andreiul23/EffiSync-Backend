@@ -49,7 +49,7 @@ function Header() {
     <header className="header">
       <nav className="header__nav">
         <a href="/" className="header__logo" onClick={handleLogoClick}>
-          <img src="/logo.svg" alt="EffiSync Logo" className="header__logo-icon" />
+          <img src="/logo_alb.svg" alt="EffiSync Logo" className="header__logo-icon" />
           <span className="header__logo-text">EffiSync</span>
         </a>
 

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { mockMembers } from '../../mockData';
 import './GroupCalendar.scss';
 
@@ -6,6 +6,12 @@ const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const HOURS = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}:00`);
 
 function GroupCalendar({ groupTasks = [], members = [] }) {
+  const [hover, setHover] = useState(null); // { x, y, block }
+
+  const handleMove = useCallback((e, block) => {
+    setHover({ x: e.clientX, y: e.clientY, block });
+  }, []);
+  const handleLeave = useCallback(() => setHover(null), []);
   // Build calendar blocks from group tasks only
   const taskBlocks = useMemo(() => {
     const today = new Date();
@@ -75,6 +81,9 @@ function GroupCalendar({ groupTasks = [], members = [] }) {
                 ))}
                 {taskBlocks.filter(b => b.day === dayIdx).map((block, i) => (
                   <div key={i} className="group-cal__block"
+                    onMouseEnter={(e) => handleMove(e, block)}
+                    onMouseMove={(e) => handleMove(e, block)}
+                    onMouseLeave={handleLeave}
                     style={{
                       top: `${(block.start / HOURS.length) * 100}%`,
                       height: `${(block.span / HOURS.length) * 100}%`,
@@ -85,11 +94,6 @@ function GroupCalendar({ groupTasks = [], members = [] }) {
                       <span className="group-cal__block-title">{block.title}</span>
                       <span className="group-cal__block-name">{block.assigneeName}</span>
                     </div>
-                    <div className="group-cal__block-tooltip">
-                      <strong>{block.title}</strong>
-                      {block.description && <p>{block.description}</p>}
-                      <span className="tooltip-assignee">Assigned to: {block.assigneeName}</span>
-                    </div>
                   </div>
                 ))}
               </div>
@@ -97,6 +101,19 @@ function GroupCalendar({ groupTasks = [], members = [] }) {
           </div>
         </div>
       </div>
+      {hover && (
+        <div
+          className="group-cal__floating-tooltip"
+          style={{
+            left: hover.x + 14,
+            top: hover.y - 14,
+          }}
+        >
+          <strong>{hover.block.title}</strong>
+          {hover.block.description && <p>{hover.block.description}</p>}
+          <span className="tooltip-assignee">Assigned to: {hover.block.assigneeName}</span>
+        </div>
+      )}
     </div>
   );
 }

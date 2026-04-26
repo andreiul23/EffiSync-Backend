@@ -41,7 +41,8 @@ function AiTaskSuggestionModal({ isOpen, onClose, task, userPoints, onAccept, on
 
   if (!isOpen || !task) return null;
 
-  const totalPointsAfter = (userPoints || 0) + task.points;
+  const taskPoints = task.pointsValue ?? task.points ?? 0;
+  const totalPointsAfter = (userPoints || 0) + taskPoints;
 
   const handleAccept = () => {
     const updatedTask = { ...task, aiSuggestedTime: editedTime };
@@ -69,7 +70,7 @@ function AiTaskSuggestionModal({ isOpen, onClose, task, userPoints, onAccept, on
           <div className="ai-suggest__info">
             <div className="ai-suggest__info-item">
               <span className="ai-suggest__info-label">Points reward</span>
-              <span className="ai-suggest__info-value">+{task.points} pts</span>
+              <span className="ai-suggest__info-value">+{taskPoints} pts</span>
             </div>
             <div className="ai-suggest__info-item">
               <span className="ai-suggest__info-label">Your total after</span>

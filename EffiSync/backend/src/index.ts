@@ -37,6 +37,8 @@ async function main() {
   await app.register(cors, {
     origin: true, // Reflects the request origin (supports credentials, unlike "*")
     credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   });
 
   // ── Global Error Handler ─────────────────────────────────

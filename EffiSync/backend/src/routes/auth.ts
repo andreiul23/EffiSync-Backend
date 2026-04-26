@@ -286,13 +286,32 @@ export async function authRoutes(app: FastifyInstance) {
     const { email, password } = parsed.data;
 
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user || !user.passwordHash) return reply.status(401).send({ error: "Invalid email or password" });
+    if (!user) return reply.status(401).send({ error: "Invalid email or password" });
+
+    // OAuth-only account → no password to compare against. Tell the user clearly.
+    if (!user.passwordHash) {
+      const provider = user.googleRefreshToken ? "Google" : user.githubId ? "GitHub" : "an external provider";
+      return reply.status(400).send({
+        error: `This account was created with ${provider}. Please use the "Continue with ${provider}" button instead.`,
+      });
+    }
 
     const match = await bcrypt.compare(password, user.passwordHash);
     if (!match) return reply.status(401).send({ error: "Invalid email or password" });
 
     const token = jwt.sign({ userId: user.id }, env.JWT_SECRET, { expiresIn: "7d" });
-    return reply.send({ success: true, userId: user.id, token });
+    return reply.send({
+      success: true,
+      userId: user.id,
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        householdId: user.householdId,
+        calendarConnected: !!user.googleRefreshToken,
+      },
+    });
   });
   app.get("/me", { preHandler: requireAuth }, async (request, reply) => {
     const userId = getAuthUserId(request);
@@ -306,6 +325,7 @@ export async function authRoutes(app: FastifyInstance) {
         email: user.email,
         name: user.name,
         householdId: user.householdId,
+        calendarConnected: !!user.googleRefreshToken,
       }
     });
   });

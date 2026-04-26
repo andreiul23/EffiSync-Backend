@@ -1,7 +1,7 @@
 .footer {
   background: $bg-surface;
   border-top: 1px solid $glass-border;
-  padding: $space-3xl $space-xl $space-xl;
+  padding: $space-lg $space-xl $space-md;
   margin-top: auto;
 
   &__inner {
@@ -10,7 +10,7 @@
   }
 
   &__brand {
-    margin-bottom: $space-2xl;
+    margin-bottom: $space-md;
   }
 
   &__logo {
@@ -29,12 +29,12 @@
   &__links {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: $space-xl;
-    margin-bottom: $space-2xl;
+    gap: $space-lg;
+    margin-bottom: $space-md;
 
     @include respond-to($bp-mobile) {
       grid-template-columns: 1fr;
-      gap: $space-lg;
+      gap: $space-md;
     }
   }
 

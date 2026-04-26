@@ -76,16 +76,36 @@ export async function taskRoutes(app: FastifyInstance) {
     }
 
     try {
-      const orFilters: Array<Record<string, string>> = [{ assignedToId: authUserId }];
-      if (authUser.householdId) {
-        orFilters.push({ householdId: authUser.householdId });
+      // Personal-style query (?userId=me): return individual tasks I own
+      // + any group tasks assigned to me. Do NOT leak other members' tasks.
+      // Household-style query: return all tasks in the household (group view).
+      let where: Record<string, unknown>;
+      if (userId) {
+        where = {
+          ...(type ? { type } : {}),
+          OR: [
+            { assignedToId: userId },
+            { AND: [{ type: "INDIVIDUAL" }, { createdById: userId }] },
+          ],
+        };
+      } else if (householdId) {
+        where = {
+          householdId,
+          ...(type ? { type } : {}),
+        };
+      } else {
+        // Fallback: tasks I own or am assigned
+        where = {
+          ...(type ? { type } : {}),
+          OR: [
+            { assignedToId: authUserId },
+            { createdById: authUserId },
+          ],
+        };
       }
 
       const tasks = await prisma.task.findMany({
-        where: {
-          ...(type ? { type } : {}),
-          OR: orFilters,
-        },
+        where,
         include: {
           assignedTo: { select: { id: true, name: true } }
         }
@@ -101,6 +121,7 @@ export async function taskRoutes(app: FastifyInstance) {
       title: z.string(),
       description: z.string().optional(),
       difficulty: z.number().int().min(1).max(5).default(1),
+      pointsValue: z.number().int().min(1).max(1000).optional(),
       category: z.enum(["CLEANING", "SHOPPING", "ADMINISTRATIVE", "PERSONAL_GROWTH", "OTHER"]).default("OTHER"),
       type: z.enum(["INDIVIDUAL", "GROUP"]).default("INDIVIDUAL"),
       assignedToId: z.string().uuid().optional(),
@@ -111,7 +132,7 @@ export async function taskRoutes(app: FastifyInstance) {
     if (!parsed.success) return reply.status(400).send({ error: "Invalid body", details: parsed.error.flatten().fieldErrors });
 
     const data = parsed.data;
-    const pointsValue = data.difficulty * 10;
+    const pointsValue = Number.isFinite(data.pointsValue) ? data.pointsValue! : data.difficulty * 10;
     const authUserId = getAuthUserId(request);
 
     const authUser = await prisma.user.findUnique({

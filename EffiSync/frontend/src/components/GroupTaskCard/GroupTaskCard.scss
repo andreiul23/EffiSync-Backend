@@ -7,11 +7,34 @@
   overflow: hidden;
   cursor: pointer;
   transition: all $transition-base;
+  position: relative;
 
   &:hover {
     background: $bg-card-hover;
     border-color: $glass-border-strong;
     transform: translateX(4px);
+  }
+
+  // Difficulty tiers — left bar + subtle tinted background
+  &--diff-easy {
+    .gtask-card__priority { background: #4caf50; }
+    background: linear-gradient(90deg, rgba(76,175,80,0.08) 0%, $bg-card 30%);
+    border-color: rgba(76,175,80,0.25);
+  }
+  &--diff-medium {
+    .gtask-card__priority { background: #ffc107; }
+    background: linear-gradient(90deg, rgba(255,193,7,0.08) 0%, $bg-card 30%);
+    border-color: rgba(255,193,7,0.25);
+  }
+  &--diff-hard {
+    .gtask-card__priority { background: #f44336; }
+    background: linear-gradient(90deg, rgba(244,67,54,0.10) 0%, $bg-card 30%);
+    border-color: rgba(244,67,54,0.25);
+  }
+
+  &--done {
+    opacity: 0.6;
+    .gtask-card__name { text-decoration: line-through; }
   }
 
   &--ai {
@@ -56,7 +79,8 @@
   &__meta {
     display: flex;
     align-items: center;
-    gap: $space-md;
+    gap: $space-sm;
+    flex-wrap: wrap;
   }
 
   &__points {
@@ -65,14 +89,34 @@
     font-weight: $fw-semibold;
   }
 
+  &__diff {
+    font-size: 10px;
+    padding: 2px $space-sm;
+    border-radius: $radius-pill;
+    font-weight: $fw-semibold;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    &--easy { color: #4caf50; background: rgba(76,175,80,0.12); }
+    &--medium { color: #ffc107; background: rgba(255,193,7,0.12); }
+    &--hard { color: #f44336; background: rgba(244,67,54,0.12); }
+  }
+
   &__status {
     font-size: 10px;
     padding: 2px $space-sm;
     border-radius: $radius-pill;
     font-weight: $fw-medium;
 
-    &--open { color: #4caf50; background: rgba(#4caf50, 0.1); }
-    &--in-progress { color: #ff9800; background: rgba(#ff9800, 0.1); }
-    &--done { color: $text-muted; background: rgba(255,255,255,0.05); }
+    &--PENDING { color: #4caf50; background: rgba(#4caf50, 0.1); }
+    &--IN_PROGRESS { color: #ff9800; background: rgba(#ff9800, 0.1); }
+    &--COMPLETED { color: $text-muted; background: rgba(255,255,255,0.05); }
+    &--AWAITING_REVIEW { color: $primary-light; background: rgba($purple, 0.12); }
+  }
+
+  &__resolved {
+    font-size: $fs-xs;
+    color: #4caf50;
+    margin-top: 2px;
   }
 }
+

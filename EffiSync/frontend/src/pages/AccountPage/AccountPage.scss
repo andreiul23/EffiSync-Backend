@@ -180,4 +180,69 @@
     font-size: $fs-sm;
     text-decoration: none;
   }
+
+  &__muted {
+    color: $text-muted;
+    font-size: $fs-sm;
+    text-align: center;
+  }
+
+  &__error {
+    color: #ff6b6b;
+    font-size: $fs-sm;
+    text-align: center;
+  }
+
+  &__upcoming {
+    @include flex-column();
+    gap: $space-md;
+    width: 100%;
+  }
+
+  &__upcoming-day {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: $radius-md;
+    padding: $space-md;
+  }
+
+  &__upcoming-date {
+    font-family: $font-heading;
+    font-size: $fs-sm;
+    font-weight: $fw-semibold;
+    color: $primary-light;
+    margin-bottom: $space-sm;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  &__upcoming-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    @include flex-column();
+    gap: $space-xs;
+  }
+
+  &__upcoming-item {
+    display: flex;
+    align-items: center;
+    gap: $space-md;
+    padding: $space-sm $space-md;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: $radius-sm;
+    font-size: $fs-sm;
+  }
+
+  &__upcoming-time {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-weight: $fw-semibold;
+    color: $primary-light;
+    min-width: 64px;
+  }
+
+  &__upcoming-title {
+    color: $text-primary;
+    flex: 1;
+  }
 }

@@ -156,4 +156,43 @@
       transform: translateX(0);
     }
   }
+
+  &__floating-tooltip {
+    position: fixed;
+    z-index: 9999;
+    transform: translateY(-100%);
+    width: 240px;
+    background: $bg-elevated;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: $radius-md;
+    padding: $space-sm $space-md;
+    box-shadow: $shadow-xl;
+    pointer-events: none;
+    animation: cal-tip-in 0.12s ease-out;
+
+    strong {
+      display: block;
+      font-size: $fs-sm;
+      color: $text-primary;
+      margin-bottom: 4px;
+    }
+    p {
+      font-size: $fs-xs;
+      color: $text-secondary;
+      margin: 0 0 4px 0;
+      line-height: 1.4;
+      white-space: normal;
+    }
+    .tooltip-assignee {
+      display: block;
+      font-size: 10px;
+      color: $purple;
+      font-weight: $fw-semibold;
+    }
+  }
+}
+
+@keyframes cal-tip-in {
+  from { opacity: 0; transform: translate(-4px, -100%); }
+  to   { opacity: 1; transform: translate(0, -100%); }
 }
