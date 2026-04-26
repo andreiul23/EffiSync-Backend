@@ -4,6 +4,12 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   envDir: '..',
+  // Strip console.* and debugger statements from the production bundle.
+  // Errors still surface via the global ErrorBoundary; keeps bundle small
+  // and avoids leaking dev-time logs to end users.
+  esbuild: {
+    drop: ['console', 'debugger'],
+  },
   build: {
     rollupOptions: {
       output: {

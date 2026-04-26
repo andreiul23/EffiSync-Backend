@@ -10,6 +10,15 @@ export const validateTask = async (taskId: string, validatorUserId: string) => {
       throw new Error("Task not found");
     }
 
+    // Cross-household guard: validator must belong to the task's household.
+    const validator = await tx.user.findUnique({
+      where: { id: validatorUserId },
+      select: { householdId: true },
+    });
+    if (!validator || validator.householdId !== task.householdId) {
+      throw new Error("You can only validate tasks in your own household");
+    }
+
     if (task.status !== "AWAITING_REVIEW" && task.status !== "IN_PROGRESS") {
       throw new Error("Task must be AWAITING_REVIEW or IN_PROGRESS to validate");
     }
@@ -22,13 +31,15 @@ export const validateTask = async (taskId: string, validatorUserId: string) => {
       throw new Error("You cannot validate your own task");
     }
 
-    const updatedTask = await tx.task.update({
-      where: { id: taskId },
-      data: {
-        status: "COMPLETED",
-        validatedById: validatorUserId,
-      },
+    // Race-safe transition: only flip if still in a validatable state.
+    const flipped = await tx.task.updateMany({
+      where: { id: taskId, status: { in: ["AWAITING_REVIEW", "IN_PROGRESS"] } },
+      data: { status: "COMPLETED", validatedById: validatorUserId },
     });
+    if (flipped.count === 0) {
+      throw new Error("Task was already validated by someone else");
+    }
+    const updatedTask = await tx.task.findUniqueOrThrow({ where: { id: taskId } });
 
     if (updatedTask.assignedToId) {
       await tx.user.update({
@@ -61,12 +72,7 @@ export const acceptTask = async (taskId: string, userId: string) => {
       throw new Error("Task not found");
     }
 
-    // Prevent double-acceptance: only PENDING tasks can be accepted
-    if (task.status !== "PENDING") {
-      throw new Error("Task is no longer available for acceptance (status: " + task.status + ")");
-    }
-
-    // Verify user exists and belongs to the same household
+    // Verify user exists and belongs to the same household — BEFORE any writes.
     const user = await tx.user.findUnique({ where: { id: userId } });
     if (!user) {
       throw new Error("User not found");
@@ -75,15 +81,16 @@ export const acceptTask = async (taskId: string, userId: string) => {
       throw new Error("You can only accept tasks in your own household");
     }
 
-    const updatedTask = await tx.task.update({
-      where: { id: taskId },
-      data: {
-        assignedToId: userId,
-        status: "IN_PROGRESS",
-      },
+    // Atomic: only flip if still PENDING. Two concurrent accepts → one wins.
+    const claimed = await tx.task.updateMany({
+      where: { id: taskId, status: "PENDING" },
+      data: { assignedToId: userId, status: "IN_PROGRESS" },
     });
+    if (claimed.count === 0) {
+      throw new Error("Task is no longer available for acceptance");
+    }
 
-    return updatedTask;
+    return await tx.task.findUniqueOrThrow({ where: { id: taskId } });
   });
 };
 
@@ -103,8 +110,9 @@ export const useVeto = async (taskId: string, userId: string) => {
       throw new Error("User not found");
     }
 
-    if (user.pointsBalance < VETO_COST) {
-      throw new Error("Insufficient points to use veto (cost is 50 points)");
+    // Cross-household guard FIRST — before any state checks or writes.
+    if (user.householdId !== task.householdId) {
+      throw new Error("You can only veto tasks in your own household");
     }
 
     if (task.assignedToId !== userId) {
@@ -126,15 +134,15 @@ export const useVeto = async (taskId: string, userId: string) => {
       );
     }
 
-    // Deduct veto cost from user
-    await tx.user.update({
-      where: { id: userId },
-      data: {
-        pointsBalance: {
-          decrement: VETO_COST,
-        },
-      },
+    // Race-safe veto deduction: conditional update prevents negative balance
+    // even under concurrent operations. Two simultaneous vetos can't both pass.
+    const deducted = await tx.user.updateMany({
+      where: { id: userId, pointsBalance: { gte: VETO_COST } },
+      data: { pointsBalance: { decrement: VETO_COST } },
     });
+    if (deducted.count === 0) {
+      throw new Error("Insufficient points to use veto (cost is 50 points)");
+    }
 
     await tx.pointsTransaction.create({
       data: {

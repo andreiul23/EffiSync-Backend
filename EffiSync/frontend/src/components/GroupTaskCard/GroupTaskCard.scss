@@ -2,115 +2,147 @@
   display: flex;
   align-items: stretch;
   background: $bg-card;
-  border: 1px solid transparent;
+  border: 1px solid $glass-border;
   border-radius: $radius-md;
   overflow: hidden;
   cursor: pointer;
-  transition: all $transition-base;
+  transition: background $transition-fast, border-color $transition-fast, box-shadow $transition-fast;
   position: relative;
+  outline: none;
 
-  &:hover {
+  &:hover,
+  &:focus-visible {
     background: $bg-card-hover;
     border-color: $glass-border-strong;
-    transform: translateX(4px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
   }
 
-  // Difficulty tiers — left bar + subtle tinted background
-  &--diff-easy {
-    .gtask-card__priority { background: #4caf50; }
-    background: linear-gradient(90deg, rgba(76,175,80,0.08) 0%, $bg-card 30%);
-    border-color: rgba(76,175,80,0.25);
-  }
-  &--diff-medium {
-    .gtask-card__priority { background: #ffc107; }
-    background: linear-gradient(90deg, rgba(255,193,7,0.08) 0%, $bg-card 30%);
-    border-color: rgba(255,193,7,0.25);
-  }
-  &--diff-hard {
-    .gtask-card__priority { background: #f44336; }
-    background: linear-gradient(90deg, rgba(244,67,54,0.10) 0%, $bg-card 30%);
-    border-color: rgba(244,67,54,0.25);
-  }
+  &:focus-visible { box-shadow: 0 0 0 2px rgba($purple, 0.55); }
+
+  // Difficulty: only the left bar is colored. No tinted gradient — keeps the list calm.
+  &--diff-easy   .gtask-card__priority { background: #4caf50; }
+  &--diff-medium .gtask-card__priority { background: #ffc107; }
+  &--diff-hard   .gtask-card__priority { background: #f44336; }
 
   &--done {
-    opacity: 0.6;
+    opacity: 0.55;
     .gtask-card__name { text-decoration: line-through; }
   }
 
-  &--ai {
-    // Intentionally empty, relying only on the badge
+  &--overdue {
+    border-color: rgba(244, 67, 54, 0.35);
   }
 
   &__priority {
-    width: 4px;
+    width: 3px;
     flex-shrink: 0;
   }
 
   &__content {
-    padding: $space-md;
+    padding: $space-sm $space-md;
     flex: 1;
     @include flex-column();
-    gap: $space-xs;
+    gap: 4px;
+    min-width: 0;
   }
 
-  &__header {
+  &__row {
     display: flex;
     align-items: center;
     gap: $space-sm;
-    flex-wrap: wrap;
+    min-width: 0;
   }
 
   &__name {
+    flex: 1;
+    min-width: 0;
     font-size: $fs-sm;
     font-weight: $fw-semibold;
     color: $text-primary;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__badges {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
   }
 
   &__ai-badge {
-    font-size: 10px;
+    font-size: 9px;
     font-weight: $fw-bold;
     color: $purple;
     background: rgba($purple, 0.15);
-    padding: 2px $space-sm;
+    padding: 2px 7px;
     border-radius: $radius-pill;
+    letter-spacing: 0.05em;
     animation: pulse-glow 3s ease-in-out infinite;
   }
 
+  // Single status pill with a colored leading dot.
+  &__status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    font-weight: $fw-semibold;
+    padding: 2px 8px 2px 7px;
+    border-radius: $radius-pill;
+    background: rgba(255, 255, 255, 0.05);
+    color: $text-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+
+  &__status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+
+  &__status-pill--PENDING         { color: #4caf50; background: rgba(76,175,80,0.10); }
+  &__status-pill--IN_PROGRESS     { color: #ff9800; background: rgba(255,152,0,0.12); }
+  &__status-pill--AWAITING_REVIEW { color: $primary-light; background: rgba($purple, 0.14); }
+  &__status-pill--COMPLETED       { color: $text-muted; background: rgba(255,255,255,0.05); }
+
+  // Lightweight inline meta line — plain text + dot separators.
   &__meta {
     display: flex;
     align-items: center;
-    gap: $space-sm;
+    gap: 6px;
     flex-wrap: wrap;
+    font-size: $fs-xs;
+    color: $text-muted;
   }
 
   &__points {
-    font-size: $fs-xs;
     color: $primary-light;
     font-weight: $fw-semibold;
   }
 
-  &__diff {
-    font-size: 10px;
-    padding: 2px $space-sm;
-    border-radius: $radius-pill;
-    font-weight: $fw-semibold;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    &--easy { color: #4caf50; background: rgba(76,175,80,0.12); }
-    &--medium { color: #ffc107; background: rgba(255,193,7,0.12); }
-    &--hard { color: #f44336; background: rgba(244,67,54,0.12); }
+  &__sep {
+    color: rgba(255, 255, 255, 0.18);
   }
 
-  &__status {
-    font-size: 10px;
-    padding: 2px $space-sm;
-    border-radius: $radius-pill;
-    font-weight: $fw-medium;
+  &__diff {
+    font-weight: $fw-semibold;
+    &--easy   { color: #6bbf6e; }
+    &--medium { color: #ffc54a; }
+    &--hard   { color: #ef6b62; }
+  }
 
-    &--PENDING { color: #4caf50; background: rgba(#4caf50, 0.1); }
-    &--IN_PROGRESS { color: #ff9800; background: rgba(#ff9800, 0.1); }
-    &--COMPLETED { color: $text-muted; background: rgba(255,255,255,0.05); }
-    &--AWAITING_REVIEW { color: $primary-light; background: rgba($purple, 0.12); }
+  &__due {
+    color: $text-muted;
+    &--overdue {
+      color: #f44336;
+      font-weight: $fw-semibold;
+    }
   }
 
   &__resolved {
@@ -119,4 +151,5 @@
     margin-top: 2px;
   }
 }
+
 

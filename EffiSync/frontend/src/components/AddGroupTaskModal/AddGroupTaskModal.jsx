@@ -171,7 +171,7 @@ function AddGroupTaskModal({ isOpen, onClose, onAdd, members = [] }) {
             <textarea
               className="add-gtask__input add-gtask__textarea"
               placeholder="Description"
-              rows={2}
+              rows={3}
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
             />

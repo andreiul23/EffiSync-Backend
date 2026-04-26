@@ -122,9 +122,12 @@ function HomePage() {
       <section className="home__pricing" id="pricing-section">
         <div className="home__pricing-header">
           <span className="home__product-tag">Pricing</span>
-          <h2 className="home__section-title">Subscriptions</h2>
+          <h2 className="home__section-title">
+            Simple plans.<br />
+            <span className="home__highlight">Real productivity.</span>
+          </h2>
           <p className="home__section-desc">
-            Choose the plan that fits your productivity needs. Upgrade or downgrade anytime.
+            Choose the plan that fits your productivity needs. Upgrade or downgrade anytime — no hidden fees.
           </p>
         </div>
         <div className="home__pricing-grid">

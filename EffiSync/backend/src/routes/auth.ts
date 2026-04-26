@@ -8,15 +8,34 @@ import { env } from "../config/env.js";
 import { getAuthUserId, requireAuth } from "../lib/auth.js";
 
 export async function authRoutes(app: FastifyInstance) {
+  // Stricter rate-limit config for credential / OAuth callback endpoints to
+  // mitigate brute-force and credential-stuffing attacks. Tunable per route.
+  const strictLimit = {
+    config: {
+      rateLimit: {
+        max: 10,
+        timeWindow: "1 minute",
+      },
+    },
+  };
+  const oauthLimit = {
+    config: {
+      rateLimit: {
+        max: 30,
+        timeWindow: "1 minute",
+      },
+    },
+  };
+
   // Initiates the Google OAuth 2.0 flow
-  app.get("/google", async (_request, reply) => {
+  app.get("/google", oauthLimit, async (_request, reply) => {
     const clientId = env.GOOGLE_CLIENT_ID;
     const redirectUri = env.GOOGLE_REDIRECT_URI;
     const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent("email profile https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/gmail.send")}&access_type=offline&prompt=consent`;
     return reply.redirect(googleAuthUrl);
   });
 
-  app.get("/google/callback", async (request, reply) => {
+  app.get("/google/callback", oauthLimit, async (request, reply) => {
     const callbackQuerySchema = z.object({ code: z.string().min(1) });
     const parsedQuery = callbackQuerySchema.safeParse(request.query);
     if (!parsedQuery.success) {
@@ -120,7 +139,7 @@ export async function authRoutes(app: FastifyInstance) {
   });
 
   // GitHub OAuth Flow
-  app.get("/github", async (_request, reply) => {
+  app.get("/github", oauthLimit, async (_request, reply) => {
     const clientId = env.GITHUB_CLIENT_ID;
     if (!clientId) return reply.status(500).send({ error: "GitHub OAuth not configured" });
     const redirectUri = `${env.BACKEND_URL}/api/auth/github/callback`;
@@ -128,7 +147,7 @@ export async function authRoutes(app: FastifyInstance) {
     return reply.redirect(githubAuthUrl);
   });
 
-  app.get("/github/callback", async (request, reply) => {
+  app.get("/github/callback", oauthLimit, async (request, reply) => {
     const callbackQuerySchema = z.object({ code: z.string().min(1) });
     const parsedQuery = callbackQuerySchema.safeParse(request.query);
     if (!parsedQuery.success) return reply.status(400).send({ error: "No code provided" });
@@ -238,7 +257,7 @@ export async function authRoutes(app: FastifyInstance) {
     }
   });
 
-  app.post("/register", async (request, reply) => {
+  app.post("/register", strictLimit, async (request, reply) => {
     const registerSchema = z.object({
       email: z.string().email(),
       password: z.string().min(6),
@@ -275,7 +294,7 @@ export async function authRoutes(app: FastifyInstance) {
     return reply.send({ success: true, userId: user.id, token });
   });
 
-  app.post("/login", async (request, reply) => {
+  app.post("/login", strictLimit, async (request, reply) => {
     const loginSchema = z.object({
       email: z.string().email(),
       password: z.string(),

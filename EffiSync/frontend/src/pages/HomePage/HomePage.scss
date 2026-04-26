@@ -35,7 +35,10 @@
     color: $text-muted;
     font-weight: $fw-light;
     margin-bottom: $space-2xl;
-    letter-spacing: 2px;
+    // 2px tracking on a 24px+ subtitle was too airy; tighten for elegance.
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    opacity: 0.85;
   }
 
   &__hero-actions {
@@ -81,10 +84,22 @@
     right: 0;
     height: 50%;
     z-index: 1;
-    opacity: 0.4;
+    opacity: 0.35;
     pointer-events: none;
-    mask-image: linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 100%);
+    // Soften both the top fade AND the bottom so the scroll indicator
+    // stays crisp instead of being half-eaten by the bend wash.
+    mask-image: linear-gradient(
+      to top,
+      rgba(0, 0, 0, 0.0) 0%,
+      rgba(0, 0, 0, 0.55) 35%,
+      transparent 100%
+    );
+    -webkit-mask-image: linear-gradient(
+      to top,
+      rgba(0, 0, 0, 0.0) 0%,
+      rgba(0, 0, 0, 0.55) 35%,
+      transparent 100%
+    );
   }
 
   &__hero-scroll-indicator {
@@ -230,36 +245,67 @@
     justify-content: center;
     gap: $space-2xl;
     flex-wrap: wrap;
+    padding: $space-xl 0 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    margin-top: $space-xl;
   }
 
   &__stat {
     @include flex-column();
     align-items: center;
     gap: $space-xs;
+    padding: 0 $space-xl;
+    position: relative;
+
+    // Subtle vertical separators between stats — desktop only.
+    &:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      right: -$space-xl;
+      top: 20%;
+      bottom: 20%;
+      width: 1px;
+      background: linear-gradient(
+        to bottom,
+        transparent,
+        rgba(255, 255, 255, 0.12),
+        transparent
+      );
+    }
+
+    @include respond-to($bp-tablet) {
+      &:not(:last-child)::after { display: none; }
+    }
 
     &-num {
       font-family: $font-heading;
       font-size: $fs-3xl;
       font-weight: $fw-extrabold;
       @include gradient-text($gradient-primary);
+      line-height: 1;
     }
 
     &-label {
       font-size: $fs-sm;
       color: $text-muted;
-      max-width: 150px;
+      max-width: 160px;
       text-align: center;
+      line-height: 1.4;
     }
   }
 
   // ── Pricing Section ──
   &__pricing {
     @include section-padding();
+    padding-bottom: $space-4xl;
   }
 
   &__pricing-header {
     text-align: center;
     margin-bottom: $space-3xl;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
   }
 
   &__pricing-grid {
@@ -267,11 +313,14 @@
     grid-template-columns: repeat(3, 1fr);
     gap: $space-xl;
     align-items: stretch;
+    max-width: 1200px;
+    margin: 0 auto;
+    // Give the scaled featured card breathing room so its glow isn't clipped
+    padding: $space-md $space-sm;
 
     @include respond-to($bp-desktop) {
       grid-template-columns: 1fr;
       max-width: 500px;
-      margin: 0 auto;
 
       .sub-card--featured {
         transform: scale(1);

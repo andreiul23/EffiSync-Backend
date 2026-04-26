@@ -16,16 +16,28 @@ function getGmailClient(userRefreshToken: string) {
 export async function sendRealEmailViaGmail(userId: string, to: string, subject: string, body: string) {
   if (env.SAFE_MODE) {
     console.log(`[SAFE_MODE] Skipping email to ${to} with subject: ${subject}`);
-    return;
+    return { ok: true, skipped: true as const };
+  }
+
+  // Header injection guard: a CR or LF in `to`/`subject` could let an attacker
+  // splice extra Bcc/Cc headers into the outgoing message. Reject early.
+  if (/[\r\n]/.test(to) || /[\r\n]/.test(subject)) {
+    throw new Error("Invalid email header value");
+  }
+  // Lightweight email shape check (Gmail will reject malformed addresses anyway,
+  // but we want to fail fast and avoid wasted API calls).
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
+    throw new Error(`Invalid recipient email: ${to}`);
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user || !user.googleRefreshToken) {
+    const reason = `Google refresh token missing for user ${userId}`;
+    console.error(`Cannot send email: ${reason}`);
+    throw new Error(reason);
   }
 
   try {
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user || !user.googleRefreshToken) {
-      console.error(`Cannot send email: Google Token missing for user ${userId}`);
-      return;
-    }
-
     const gmail = getGmailClient(user.googleRefreshToken);
 
     const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString("base64")}?=`;
@@ -52,17 +64,21 @@ export async function sendRealEmailViaGmail(userId: string, to: string, subject:
     });
 
     console.log(`Real email sent via Gmail to ${to}`);
+    return { ok: true as const };
   } catch (error) {
     console.error("Email failed:", error);
+    throw error instanceof Error ? error : new Error(String(error));
   }
 }
 
 export async function sendWelcomeEmail(userId: string, userEmail: string, userName: string) {
   const subject = "Welcome to EffiSync!";
   const htmlBody = `Salut ${userName}, sunt Secretara ta EffiSync. Contul tău a fost configurat cu succes folosind acest cont de Google. De acum, te voi ajuta să îți gestionezi task-urile și casa direct de aici!`;
-  
-  // Fire and forget
-  sendRealEmailViaGmail(userId, userEmail, subject, htmlBody);
+  // Fire and forget — swallow errors so this never crashes the process.
+  return sendRealEmailViaGmail(userId, userEmail, subject, htmlBody).catch((err) => {
+    console.warn(`[email] sendWelcomeEmail failed for ${userId}:`, err instanceof Error ? err.message : err);
+    return { ok: false as const, skipped: true as const };
+  });
 }
 
 export async function sendTaskAssignedEmail(assigneeUserId: string, userEmail: string, taskTitle: string, points: number) {
@@ -72,6 +88,9 @@ export async function sendTaskAssignedEmail(assigneeUserId: string, userEmail: s
     <p>This task is worth <strong>${points} points</strong>.</p>
     <p>Complete it to climb the leaderboard!</p>
   `;
-  // Send email to the assignee using their own Gmail
-  sendRealEmailViaGmail(assigneeUserId, userEmail, subject, htmlBody);
+  // Fire and forget — swallow errors so a missing refresh token can’t crash the app.
+  return sendRealEmailViaGmail(assigneeUserId, userEmail, subject, htmlBody).catch((err) => {
+    console.warn(`[email] sendTaskAssignedEmail failed for ${assigneeUserId}:`, err instanceof Error ? err.message : err);
+    return { ok: false as const, skipped: true as const };
+  });
 }

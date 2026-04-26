@@ -16,10 +16,9 @@ export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
     datasourceUrl: env.DATABASE_URL,
-    log:
-      env.NODE_ENV === "development"
-        ? ["query", "warn", "error"]
-        : ["warn", "error"],
+    // Verbose 'query' logging dominated dev-mode latency (every request was
+    // duplicating ~80 lines of SQL to stdout). Keep only warnings + errors.
+    log: ["warn", "error"],
   });
 
 if (env.NODE_ENV !== "production") {

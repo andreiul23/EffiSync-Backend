@@ -28,6 +28,7 @@ function GroupsDashboard({ user }) {
   const [groupTasks, setGroupTasks] = useState([]);
   const [members, setMembers] = useState([]);
   const [householdName, setHouseholdName] = useState('');
+  const [household, setHousehold] = useState(null); // { inviteCode, founderId, isFounder, ... }
   const [selectedTask, setSelectedTask] = useState(null);
   const [showAiModal, setShowAiModal] = useState(false);
   const [showAddTask, setShowAddTask] = useState(false);
@@ -66,6 +67,7 @@ function GroupsDashboard({ user }) {
         if (hData.success) {
           setHouseholdName(hData.household.name);
           setMembers(hData.household.members || []);
+          setHousehold(hData.household);
         }
 
         // Shop catalog
@@ -222,21 +224,55 @@ function GroupsDashboard({ user }) {
     <div className="groups-page">
       <div className="groups-page__header">
         <h1 className="groups-page__title">{householdName || 'My Group'}</h1>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
           <span className="groups-page__subtitle">Group calendar &amp; tasks</span>
-          <button 
-            className="groups-page__btn-complete" 
+
+          {/* Invite code chip — visible to ANY member so they can grow the group */}
+          {household?.inviteCode && (
+            <button
+              type="button"
+              className="groups-page__invite-chip"
+              title="Click to copy and share with your roommates"
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(household.inviteCode);
+                  toast.success(`Invite code copied: ${household.inviteCode}`);
+                } catch {
+                  toast.info(`Invite code: ${household.inviteCode}`);
+                }
+              }}
+            >
+              <span className="groups-page__invite-chip-label">Invite code</span>
+              <span className="groups-page__invite-chip-value">{household.inviteCode}</span>
+              <span className="groups-page__invite-chip-icon" aria-hidden="true">📋</span>
+            </button>
+          )}
+
+          <button
+            className="groups-page__btn-complete"
             style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
             onClick={async () => {
               const loadingId = toast.info('Generating AI report and sending emails…', { duration: 0 });
               try {
-                await debug.triggerReport(user.householdId);
+                const res = await debug.triggerReport(user.householdId);
                 toast.dismiss(loadingId);
-                toast.success('AI Weekly Report generated and sent!');
+                if (res?.success) {
+                  toast.success(res.message || 'AI Weekly Report generated and sent!');
+                } else if (res?.code === 'NO_GMAIL_LINKED') {
+                  toast.error('Connect Google in your account to enable email reports.');
+                } else {
+                  toast.error(res?.message || 'Failed to generate report.');
+                }
               } catch (e) {
                 console.error(e);
                 toast.dismiss(loadingId);
-                toast.error('Failed to generate report.');
+                // Server now returns 400 with { message, code } — surface that.
+                const serverMsg = e?.body?.message || e?.message;
+                if (e?.body?.code === 'NO_GMAIL_LINKED') {
+                  toast.error('Connect Google in your account to enable email reports.');
+                } else {
+                  toast.error(serverMsg || 'Failed to generate report.');
+                }
               }
             }}
           >
@@ -365,6 +401,8 @@ function GroupsDashboard({ user }) {
         isOpen={showMemberProfile}
         onClose={() => { setShowMemberProfile(false); setSelectedMember(null); }}
         member={selectedMember}
+        householdId={user.householdId}
+        currentUserId={user.id}
       />
     </div>
   );

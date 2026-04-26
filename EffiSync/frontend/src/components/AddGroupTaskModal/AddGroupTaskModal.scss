@@ -1,28 +1,58 @@
 .add-gtask {
   &__overlay { @include modal-overlay(); }
-  @include modal-content(); width: 100%; max-width: 460px;
+  @include modal-content();
+  width: 100%;
+  max-width: 560px;
+  padding: $space-xl $space-2xl;
+  max-height: 90vh;
+  overflow-y: auto;
+
+  @include respond-to($bp-tablet) {
+    padding: $space-lg $space-lg;
+    max-width: 100%;
+  }
 
   &__header {
-    @include flex-between(); margin-bottom: $space-lg;
-    h3 { font-family: $font-heading; font-size: $fs-lg; font-weight: $fw-bold; }
+    @include flex-between();
+    margin-bottom: $space-lg;
+    padding-bottom: $space-md;
+    border-bottom: 1px solid $glass-border;
+    h3 { font-family: $font-heading; font-size: $fs-xl; font-weight: $fw-bold; }
   }
   &__close {
     background: none; border: none; color: $text-muted; font-size: $fs-2xl;
-    cursor: pointer; line-height: 1; &:hover { color: $text-primary; }
+    cursor: pointer; line-height: 1;
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: $radius-round;
+    transition: background $transition-fast, color $transition-fast;
+    &:hover { color: $text-primary; background: rgba(255,255,255,0.06); }
   }
-  &__form { @include flex-column(); gap: $space-md; }
-  &__field { @include flex-column(); gap: $space-xs; }
+  &__form { @include flex-column(); gap: $space-lg; }
+  &__field { @include flex-column(); gap: $space-sm; min-width: 0; }
   &__label {
-    font-size: $fs-xs; font-weight: $fw-medium; color: $text-muted;
+    font-size: $fs-xs; font-weight: $fw-semibold; color: $text-muted;
     text-transform: uppercase; letter-spacing: 1px;
+    display: flex; align-items: center; flex-wrap: wrap; gap: $space-xs;
   }
-  &__input { @include input-base(); }
-  &__textarea { @include input-base(); resize: vertical; }
+  &__input { @include input-base(); padding: $space-sm $space-md; }
+  &__textarea {
+    @include input-base();
+    padding: $space-sm $space-md;
+    resize: vertical;
+    min-height: 90px;
+    line-height: 1.5;
+  }
   &__select {
-    @include input-base(); cursor: pointer;
+    @include input-base(); cursor: pointer; padding: $space-sm $space-md;
     option { background: $bg-card; color: $text-primary; }
   }
-  &__row { display: grid; grid-template-columns: 1fr 1fr; gap: $space-md; }
+  &__row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $space-lg;
+    @include respond-to($bp-mobile) { grid-template-columns: 1fr; gap: $space-md; }
+  }
 
   &__stepper {
     display: flex;
@@ -63,26 +93,36 @@
   }
 
   &__actions {
-    display: flex; gap: $space-sm; justify-content: flex-end;
-    padding-top: $space-md; border-top: 1px solid $glass-border;
+    display: flex;
+    flex-wrap: wrap;
+    gap: $space-sm;
+    justify-content: flex-end;
+    padding-top: $space-lg;
+    margin-top: $space-sm;
+    border-top: 1px solid $glass-border;
   }
   &__btn {
-    @include button-base(); padding: $space-sm $space-xl; font-size: $fs-sm;
+    @include button-base();
+    padding: $space-sm $space-lg;
+    font-size: $fs-sm;
+    font-weight: $fw-semibold;
+    white-space: nowrap;
+    min-height: 42px;
     &--primary {
       background: $gradient-accent; color: $white-off;
       &:hover { box-shadow: $shadow-glow; transform: translateY(-1px); }
     }
     &--ghost {
       background: transparent; color: $text-secondary; border: 1px solid $glass-border;
-      &:hover { background: $glass-bg; }
+      &:hover { background: $glass-bg; color: $text-primary; }
     }
   }
 
   &__tabs {
     display: flex;
     gap: $space-xs;
-    padding: 0 $space-lg;
-    margin-bottom: $space-md;
+    padding: 0;
+    margin-bottom: $space-lg;
   }
   &__tab {
     @include button-base();
@@ -101,16 +141,16 @@
   }
 
   &__ai-intake {
-    padding: 0 $space-lg $space-lg;
+    padding: 0;
     display: flex;
     flex-direction: column;
-    gap: $space-sm;
+    gap: $space-md;
   }
   &__ai-hint {
     font-size: $fs-sm;
     color: $text-secondary;
     margin: 0;
-    line-height: 1.5;
+    line-height: 1.6;
   }
   &__error {
     color: #ff6b6b;
@@ -122,34 +162,37 @@
   }
   &__ai-reason {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: $space-sm;
-    background: rgba(144, 67, 153, 0.12);
+    background: linear-gradient(135deg, rgba(144, 67, 153, 0.14), rgba(244, 114, 182, 0.08));
     border: 1px solid rgba(144, 67, 153, 0.35);
     color: $text-primary;
-    font-size: $fs-xs;
-    padding: $space-xs $space-sm;
-    border-radius: $radius-sm;
-    margin-bottom: $space-sm;
-    line-height: 1.4;
+    font-size: $fs-sm;
+    padding: $space-sm $space-md;
+    border-radius: $radius-md;
+    line-height: 1.5;
   }
   &__ai-reason-badge {
     background: $gradient-accent;
     color: $white-off;
-    font-weight: $fw-semibold;
+    font-weight: $fw-bold;
     font-size: 10px;
-    padding: 2px 6px;
-    border-radius: $radius-sm;
+    letter-spacing: 0.5px;
+    padding: 3px 8px;
+    border-radius: $radius-pill;
     flex-shrink: 0;
+    margin-top: 1px;
   }
   &__chip {
     display: inline-block;
-    margin-left: $space-xs;
     background: rgba(144, 67, 153, 0.18);
-    color: #d8a8e0;
+    color: #e0b8e8;
     font-size: 10px;
     font-weight: $fw-semibold;
-    padding: 2px 6px;
-    border-radius: $radius-sm;
+    letter-spacing: 0.3px;
+    padding: 3px 8px;
+    border-radius: $radius-pill;
+    text-transform: none;
+    border: 1px solid rgba(144, 67, 153, 0.3);
   }
 }

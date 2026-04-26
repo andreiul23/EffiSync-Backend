@@ -9,6 +9,7 @@ function TaskModal({ isOpen, onClose, task, date, time, onSave, onDelete, onTogg
     endTime: '',
     color: '#904399',
   });
+  const [titleError, setTitleError] = useState(false);
 
   useEffect(() => {
     if (task) {
@@ -28,7 +29,16 @@ function TaskModal({ isOpen, onClose, task, date, time, onSave, onDelete, onTogg
         color: '#904399',
       });
     }
-  }, [task, time]);
+    setTitleError(false);
+  }, [task, time, isOpen]);
+
+  // Close on Escape for keyboard users.
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -36,7 +46,11 @@ function TaskModal({ isOpen, onClose, task, date, time, onSave, onDelete, onTogg
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!form.title.trim()) return;
+    if (!form.title.trim()) {
+      // Surface the error inline instead of silently aborting.
+      setTitleError(true);
+      return;
+    }
     onSave({
       ...task,
       ...form,
@@ -51,23 +65,39 @@ function TaskModal({ isOpen, onClose, task, date, time, onSave, onDelete, onTogg
   const colors = ['#904399', '#5D0E66', '#F9C7FF', '#515151', '#7B1FA2', '#E91E63'];
 
   return (
-    <div className="task-modal__overlay" onClick={onClose}>
-      <div className="task-modal" onClick={(e) => e.stopPropagation()}>
+    <div className="task-modal__overlay" onClick={onClose} role="presentation">
+      <div
+        className="task-modal"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="task-modal-title"
+      >
         <div className="task-modal__header">
-          <h3 className="task-modal__title">{isEditing ? 'Edit Task' : 'New Task'}</h3>
-          <button className="task-modal__close" onClick={onClose}>×</button>
+          <h3 className="task-modal__title" id="task-modal-title">{isEditing ? 'Edit Task' : 'New Task'}</h3>
+          <button className="task-modal__close" onClick={onClose} aria-label="Close dialog">×</button>
         </div>
 
-        <form className="task-modal__form" onSubmit={handleSubmit}>
+        <form className="task-modal__form" onSubmit={handleSubmit} noValidate>
           <div className="task-modal__field">
             <input
-              className="task-modal__input task-modal__input--title"
+              className={`task-modal__input task-modal__input--title${titleError ? ' task-modal__input--error' : ''}`}
               type="text"
               placeholder="Task title"
               value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              onChange={(e) => {
+                if (titleError && e.target.value.trim()) setTitleError(false);
+                setForm({ ...form, title: e.target.value });
+              }}
+              aria-invalid={titleError}
+              aria-describedby={titleError ? 'task-modal-title-error' : undefined}
               autoFocus
             />
+            {titleError && (
+              <p className="task-modal__error" id="task-modal-title-error" role="alert">
+                Please enter a title for this task.
+              </p>
+            )}
           </div>
 
           <div className="task-modal__field">
@@ -82,8 +112,9 @@ function TaskModal({ isOpen, onClose, task, date, time, onSave, onDelete, onTogg
 
           <div className="task-modal__row">
             <div className="task-modal__field">
-              <label className="task-modal__label">Start</label>
+              <label className="task-modal__label" htmlFor="task-modal-start">Start</label>
               <input
+                id="task-modal-start"
                 className="task-modal__input"
                 type="time"
                 value={form.startTime}
@@ -91,8 +122,9 @@ function TaskModal({ isOpen, onClose, task, date, time, onSave, onDelete, onTogg
               />
             </div>
             <div className="task-modal__field">
-              <label className="task-modal__label">End</label>
+              <label className="task-modal__label" htmlFor="task-modal-end">End</label>
               <input
+                id="task-modal-end"
                 className="task-modal__input"
                 type="time"
                 value={form.endTime}
@@ -103,11 +135,14 @@ function TaskModal({ isOpen, onClose, task, date, time, onSave, onDelete, onTogg
 
           <div className="task-modal__field">
             <label className="task-modal__label">Color</label>
-            <div className="task-modal__colors">
+            <div className="task-modal__colors" role="radiogroup" aria-label="Task color">
               {colors.map((c) => (
                 <button
                   key={c}
                   type="button"
+                  role="radio"
+                  aria-checked={form.color === c}
+                  aria-label={`Color ${c}`}
                   className={`task-modal__color ${form.color === c ? 'task-modal__color--active' : ''}`}
                   style={{ background: c }}
                   onClick={() => setForm({ ...form, color: c })}

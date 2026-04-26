@@ -78,6 +78,32 @@
     padding: 2px $space-sm;
     border-left: 3px solid $purple;
     border-radius: 0 $radius-sm $radius-sm 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+
+  &__empty {
+    margin: $space-sm $space-md;
+    padding: $space-md;
+    border-radius: $radius-md;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px dashed $glass-border;
+    text-align: center;
+  }
+
+  &__empty-title {
+    margin: 0;
+    color: $text-primary;
+    font-weight: $fw-semibold;
+    font-size: $fs-sm;
+  }
+
+  &__empty-sub {
+    margin: 4px 0 0;
+    color: $text-muted;
+    font-size: $fs-xs;
   }
 
   &__tasks-stack {

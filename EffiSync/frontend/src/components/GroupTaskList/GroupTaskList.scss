@@ -2,20 +2,104 @@
   @include flex-column();
   gap: $space-md;
 
+  &__header {
+    display: flex;
+    flex-direction: column;
+    gap: $space-sm;
+    padding-bottom: $space-sm;
+    border-bottom: 1px solid $glass-border;
+  }
+
+  &__title-wrap {
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+  }
+
   &__title {
     font-family: $font-heading;
     font-size: $fs-md;
     font-weight: $fw-bold;
     color: $text-primary;
-    padding-bottom: $space-sm;
-    border-bottom: 1px solid $glass-border;
+    margin: 0;
+  }
+
+  &__count {
+    font-size: $fs-xs;
+    font-weight: $fw-semibold;
+    color: $text-muted;
+    background: rgba(255, 255, 255, 0.06);
+    padding: 2px 10px;
+    border-radius: $radius-pill;
+    min-width: 24px;
+    text-align: center;
+  }
+
+  &__tabs {
+    display: flex;
+    gap: 4px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid $glass-border;
+    border-radius: $radius-md;
+    padding: 4px;
+  }
+
+  &__tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: transparent;
+    border: none;
+    color: $text-muted;
+    font-size: $fs-xs;
+    font-weight: $fw-semibold;
+    padding: 6px 10px;
+    border-radius: $radius-sm;
+    cursor: pointer;
+    transition: all $transition-fast;
+    white-space: nowrap;
+
+    &:hover { color: $text-primary; }
+
+    &.is-active {
+      background: rgba($purple, 0.18);
+      color: #fff;
+      box-shadow: inset 0 0 0 1px rgba($purple, 0.35);
+    }
+  }
+
+  &__tab-count {
+    font-size: 10px;
+    font-weight: $fw-bold;
+    background: rgba(255, 255, 255, 0.08);
+    padding: 1px 6px;
+    border-radius: $radius-pill;
+    min-width: 18px;
+    text-align: center;
+  }
+
+  &__tab.is-active &__tab-count {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
   }
 
   &__items {
     @include flex-column();
     gap: $space-sm;
     @include scrollbar-custom();
-    max-height: calc(100vh - 250px);
+    max-height: calc(100vh - 320px);
     overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  &__empty-filter {
+    text-align: center;
+    padding: $space-xl $space-md;
+    color: $text-muted;
+    font-size: $fs-sm;
+    font-style: italic;
   }
 }
+

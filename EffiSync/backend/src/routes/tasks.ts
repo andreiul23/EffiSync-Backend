@@ -67,8 +67,19 @@ export async function taskRoutes(app: FastifyInstance) {
 
     const { userId, householdId, type } = parsed.data;
 
+    // Allow viewing another user's tasks ONLY if they are in the same household.
+    // This powers the "see what this roommate is up to" view in the member modal.
     if (userId && userId !== authUserId) {
-      return reply.status(403).send({ error: "You can only query your own tasks" });
+      if (!authUser.householdId) {
+        return reply.status(403).send({ error: "You can only query your own tasks" });
+      }
+      const target = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { householdId: true },
+      });
+      if (!target || target.householdId !== authUser.householdId) {
+        return reply.status(403).send({ error: "That user is not in your household" });
+      }
     }
 
     if (householdId && householdId !== authUser.householdId) {
@@ -107,7 +118,7 @@ export async function taskRoutes(app: FastifyInstance) {
       const tasks = await prisma.task.findMany({
         where,
         include: {
-          assignedTo: { select: { id: true, name: true } }
+          assignedTo: { select: { id: true, name: true, email: true } }
         }
       });
       return reply.send({ success: true, tasks });
@@ -118,14 +129,19 @@ export async function taskRoutes(app: FastifyInstance) {
 
   app.post("/tasks", async (request, reply) => {
     const bodySchema = z.object({
-      title: z.string(),
-      description: z.string().optional(),
+      title: z.string().trim().min(1, "Title is required").max(200),
+      description: z.string().max(2000).optional(),
       difficulty: z.number().int().min(1).max(5).default(1),
       pointsValue: z.number().int().min(1).max(1000).optional(),
       category: z.enum(["CLEANING", "SHOPPING", "ADMINISTRATIVE", "PERSONAL_GROWTH", "OTHER"]).default("OTHER"),
       type: z.enum(["INDIVIDUAL", "GROUP"]).default("INDIVIDUAL"),
       assignedToId: z.string().uuid().optional(),
-      dueDate: z.string().optional()
+      dueDate: z
+        .string()
+        .optional()
+        .refine((v) => v === undefined || !Number.isNaN(Date.parse(v)), {
+          message: "dueDate must be a valid ISO date string",
+        })
     });
 
     const parsed = bodySchema.safeParse(request.body);
@@ -190,13 +206,19 @@ export async function taskRoutes(app: FastifyInstance) {
   app.put("/tasks/:id", async (request, reply) => {
     const { id } = request.params as { id: string };
     const bodySchema = z.object({
-      title: z.string().optional(),
-      description: z.string().optional(),
+      title: z.string().trim().min(1, "Title cannot be empty").max(200).optional(),
+      description: z.string().max(2000).optional(),
       difficulty: z.number().int().min(1).max(5).optional(),
       category: z.enum(["CLEANING", "SHOPPING", "ADMINISTRATIVE", "PERSONAL_GROWTH", "OTHER"]).optional(),
       type: z.enum(["INDIVIDUAL", "GROUP"]).optional(),
       assignedToId: z.string().uuid().optional().nullable(),
-      dueDate: z.string().optional().nullable(),
+      dueDate: z
+        .string()
+        .optional()
+        .nullable()
+        .refine((v) => v === undefined || v === null || !Number.isNaN(Date.parse(v)), {
+          message: "dueDate must be a valid ISO date string",
+        }),
       status: z.enum(["PENDING", "IN_PROGRESS", "AWAITING_REVIEW", "COMPLETED", "REJECTED"]).optional()
     });
 
@@ -284,7 +306,7 @@ export async function taskRoutes(app: FastifyInstance) {
 
     const existingTask = await prisma.task.findUnique({
       where: { id },
-      select: { householdId: true },
+      select: { householdId: true, createdById: true, assignedToId: true },
     });
 
     if (!existingTask) {
@@ -293,6 +315,12 @@ export async function taskRoutes(app: FastifyInstance) {
 
     if (!authUser.householdId || existingTask.householdId !== authUser.householdId) {
       return reply.status(403).send({ error: "You can only delete tasks in your household" });
+    }
+
+    // Only the task creator OR its current assignee can delete it. Prevents
+    // any household member from nuking everyone else's tasks.
+    if (existingTask.createdById !== authUserId && existingTask.assignedToId !== authUserId) {
+      return reply.status(403).send({ error: "Only the task creator or assignee can delete this task" });
     }
 
     try {
@@ -313,17 +341,37 @@ export async function taskRoutes(app: FastifyInstance) {
     const userId = getAuthUserId(request);
 
     try {
-      const task = await prisma.task.findUnique({ where: { id } });
-      if (!task) return reply.status(404).send({ error: "Task not found" });
-      if (task.assignedToId !== userId) return reply.status(403).send({ error: "You can only complete tasks assigned to you" });
-      if (task.status === "COMPLETED") return reply.status(400).send({ error: "Task is already completed" });
-
+      // Race-safe completion: a single conditional update guards against
+      // double-clicks awarding points twice. Only one concurrent request
+      // can flip status from a non-COMPLETED state to COMPLETED.
       const updatedTask = await prisma.$transaction(async (tx) => {
-        const t = await tx.task.update({
-          where: { id },
+        const flipped = await tx.task.updateMany({
+          where: {
+            id,
+            assignedToId: userId,
+            status: { not: "COMPLETED" },
+          },
           data: { status: "COMPLETED" },
-          include: { assignedTo: { select: { id: true, name: true } } }
         });
+        if (flipped.count === 0) {
+          // Either the task doesn't exist, isn't ours, or is already completed.
+          // Distinguish for a cleaner error.
+          const existing = await tx.task.findUnique({
+            where: { id },
+            select: { id: true, assignedToId: true, status: true },
+          });
+          if (!existing) throw new Error("NOT_FOUND");
+          if (existing.assignedToId !== userId) throw new Error("FORBIDDEN");
+          if (existing.status === "COMPLETED") throw new Error("ALREADY_COMPLETED");
+          throw new Error("UPDATE_FAILED");
+        }
+
+        const t = await tx.task.findUnique({
+          where: { id },
+          include: { assignedTo: { select: { id: true, name: true, email: true } } },
+        });
+        if (!t) throw new Error("NOT_FOUND");
+
         await tx.user.update({
           where: { id: userId },
           data: { pointsBalance: { increment: t.pointsValue } },
@@ -336,6 +384,11 @@ export async function taskRoutes(app: FastifyInstance) {
 
       return reply.send({ success: true, task: updatedTask });
     } catch (err: unknown) {
+      if (err instanceof Error) {
+        if (err.message === "NOT_FOUND") return reply.status(404).send({ error: "Task not found" });
+        if (err.message === "FORBIDDEN") return reply.status(403).send({ error: "You can only complete tasks assigned to you" });
+        if (err.message === "ALREADY_COMPLETED") return reply.status(400).send({ error: "Task is already completed" });
+      }
       return reply.status(500).send({ error: "Failed to complete task" });
     }
   });

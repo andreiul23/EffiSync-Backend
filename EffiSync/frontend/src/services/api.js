@@ -6,6 +6,11 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 const AUTH_BASE_URL = `${API_BASE_URL}/auth`;
 
+// Endpoints that should NOT trigger the auto-logout-on-401 behaviour
+// (login/register obviously return 401 on bad creds; that's user error,
+// not an expired session).
+const AUTH_ENDPOINTS = ['/auth/login', '/auth/register'];
+
 // ─── Core Fetch Wrapper ─────────────────────────────────
 
 export const apiFetch = async (url, options = {}) => {
@@ -27,7 +32,30 @@ export const apiFetch = async (url, options = {}) => {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(data.message || data.error || 'An error occurred during the request');
+    // 401 on an authenticated endpoint = session expired / token invalid.
+    // Clear local auth state and bounce to /login. Skip for credential
+    // endpoints where 401 simply means "wrong password".
+    const isAuthEndpoint = AUTH_ENDPOINTS.some((p) => url.includes(p));
+    if (response.status === 401 && !isAuthEndpoint && typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem('effisync_jwt');
+        localStorage.removeItem('token');
+        localStorage.removeItem('effisync_user');
+        localStorage.removeItem('effisync_logged_in');
+      } catch { /* ignore storage errors */ }
+      // Avoid redirect loop if we're already on login/signup.
+      const path = window.location.pathname;
+      if (path !== '/login' && path !== '/signup' && path !== '/') {
+        window.location.replace('/login?error=session_expired');
+      }
+    }
+
+    // Attach the parsed body + status so callers can branch on
+    // server-provided error codes (e.g. `e.body.code === 'NO_GMAIL_LINKED'`).
+    const err = new Error(data.message || data.error || 'An error occurred during the request');
+    err.status = response.status;
+    err.body = data;
+    throw err;
   }
 
   return data;
