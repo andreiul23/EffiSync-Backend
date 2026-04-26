@@ -7,7 +7,7 @@ function Footer() {
       <div className="footer__inner">
         <div className="footer__brand">
           <span className="footer__logo">
-            <img src="/logo.svg" alt="EffiSync Logo" style={{ width: '20px', height: '20px', objectFit: 'contain' }} /> 
+            <img src="/logo_alb.svg" alt="EffiSync Logo" style={{ width: '20px', height: '20px', objectFit: 'contain' }} /> 
             EffiSync
           </span>
           <p className="footer__tagline">Plan less. Achieve more.</p>

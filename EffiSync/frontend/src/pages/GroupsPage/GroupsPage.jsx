@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { debug, households, tasks as tasksApi } from '../../services/api';
 import GroupCalendar from '../../components/GroupCalendar/GroupCalendar';
@@ -35,6 +35,22 @@ function GroupsDashboard({ user }) {
   const [showMemberProfile, setShowMemberProfile] = useState(false);
   const [loading, setLoading] = useState(true);
   const [completingTaskId, setCompletingTaskId] = useState(null);
+  const [rewards, setRewards] = useState([]);
+  const [purchasingRewardId, setPurchasingRewardId] = useState(null);
+  const shopRef = useRef(null);
+  const [shopVisible, setShopVisible] = useState(false);
+
+  // Hide FAB once Shop section enters the viewport.
+  useEffect(() => {
+    const el = shopRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      (entries) => setShopVisible(entries[0]?.isIntersecting ?? false),
+      { threshold: 0.05 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [rewards.length]);
 
   // Fetch household data + tasks on mount
   useEffect(() => {
@@ -50,6 +66,14 @@ function GroupsDashboard({ user }) {
         if (hData.success) {
           setHouseholdName(hData.household.name);
           setMembers(hData.household.members || []);
+        }
+
+        // Shop catalog
+        try {
+          const sData = await households.shopList(user.householdId);
+          if (sData.success) setRewards(sData.rewards || []);
+        } catch (shopErr) {
+          console.warn('Shop unavailable:', shopErr);
         }
       } catch (err) {
         console.error('Failed to fetch household data:', err);
@@ -134,6 +158,33 @@ function GroupsDashboard({ user }) {
     setSelectedMember(member);
     setShowMemberProfile(true);
   };
+
+  const handlePurchase = async (reward) => {
+    if (purchasingRewardId) return;
+    if (userPoints < reward.price) {
+      toast.error(`You need ${reward.price - userPoints} more points`);
+      return;
+    }
+    setPurchasingRewardId(reward.id);
+    try {
+      const data = await households.shopPurchase(user.householdId, reward.id);
+      if (data.success) {
+        setMembers((prev) => prev.map((m) => (m.id === user.id ? { ...m, pointsBalance: data.newBalance } : m)));
+        toast.success(`Unlocked: ${reward.title} (-${reward.price} pts)`);
+      } else {
+        toast.error(data.error || 'Purchase failed');
+      }
+    } catch (err) {
+      console.error('Purchase failed:', err);
+      toast.error(err.message || 'Purchase failed');
+    } finally {
+      setPurchasingRewardId(null);
+    }
+  };
+
+  const leaderboard = [...members].sort(
+    (a, b) => (b.pointsBalance || 0) - (a.pointsBalance || 0)
+  );
 
   const currentGroup = {
     id: user.householdId,
@@ -242,7 +293,64 @@ function GroupsDashboard({ user }) {
         </div>
       </div>
 
-      <button className="groups-page__fab" onClick={() => setShowAddTask(true)}>+</button>
+      <button
+        className={`groups-page__fab${shopVisible ? ' groups-page__fab--hidden' : ''}`}
+        onClick={() => setShowAddTask(true)}
+      >+</button>
+
+      {/* ── Shop ──────────────────────────────────────── */}
+      {rewards.length > 0 && (
+        <section ref={shopRef} className="groups-page__section groups-page__shop">
+          <header className="groups-page__section-header">
+            <h2 className="groups-page__section-title">🛍️ Shop</h2>
+            <span className="groups-page__section-sub">Spend your hard-earned points</span>
+          </header>
+          <div className="groups-page__shop-grid">
+            {rewards.map((r) => {
+              const canAfford = userPoints >= r.price;
+              const isBusy = purchasingRewardId === r.id;
+              return (
+                <article key={r.id} className={`reward-card${canAfford ? '' : ' reward-card--locked'}`}>
+                  <div className="reward-card__icon" aria-hidden="true">{r.icon || '🎁'}</div>
+                  <h3 className="reward-card__title">{r.title}</h3>
+                  <p className="reward-card__desc">{r.description}</p>
+                  <button
+                    className="reward-card__buy"
+                    onClick={() => handlePurchase(r)}
+                    disabled={!canAfford || isBusy}
+                  >
+                    {isBusy ? '…' : `${r.price} pts`}
+                  </button>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* ── Leaderboard ───────────────────────────────── */}
+      {leaderboard.length > 0 && (
+        <section className="groups-page__section groups-page__leaderboard">
+          <header className="groups-page__section-header">
+            <h2 className="groups-page__section-title">🏆 Leaderboard</h2>
+            <span className="groups-page__section-sub">Top earners in {householdName || 'this group'}</span>
+          </header>
+          <ol className="leaderboard-list">
+            {leaderboard.map((m, idx) => {
+              const rank = idx + 1;
+              const tier = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : 'rest';
+              const isMe = m.id === user.id;
+              return (
+                <li key={m.id} className={`leaderboard-row leaderboard-row--${tier}${isMe ? ' leaderboard-row--me' : ''}`}>
+                  <span className={`leaderboard-row__rank leaderboard-row__rank--${tier}`}>{rank}</span>
+                  <span className="leaderboard-row__name">{m.name || m.email}{isMe && <em className="leaderboard-row__you"> (you)</em>}</span>
+                  <span className="leaderboard-row__pts">{m.pointsBalance || 0} pts</span>
+                </li>
+              );
+            })}
+          </ol>
+        </section>
+      )}
 
       <AiTaskSuggestionModal
         isOpen={showAiModal}
@@ -252,7 +360,7 @@ function GroupsDashboard({ user }) {
         onAccept={handleAcceptTask}
         onRefuse={handleRefuseTask}
       />
-      <AddGroupTaskModal isOpen={showAddTask} onClose={() => setShowAddTask(false)} onAdd={handleAddTask} />
+      <AddGroupTaskModal isOpen={showAddTask} onClose={() => setShowAddTask(false)} onAdd={handleAddTask} members={members} />
       <MemberProfileModal
         isOpen={showMemberProfile}
         onClose={() => { setShowMemberProfile(false); setSelectedMember(null); }}

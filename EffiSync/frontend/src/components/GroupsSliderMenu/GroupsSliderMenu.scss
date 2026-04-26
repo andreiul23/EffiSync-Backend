@@ -4,7 +4,7 @@
   width: 360px; height: 100vh;
   background: $bg-surface;
   border-left: 1px solid $glass-border;
-  z-index: $z-modal;
+  z-index: 900; // above header (600) and modal (400)
   transform: translateX(100%);
   transition: transform $transition-base;
   @include flex-column();
@@ -15,7 +15,7 @@
   &__backdrop {
     position: fixed; inset: 0;
     background: rgba(0,0,0,0.4);
-    z-index: $z-modal-bg;
+    z-index: 850;
   }
 
   &__header {

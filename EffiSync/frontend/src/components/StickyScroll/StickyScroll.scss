@@ -84,12 +84,16 @@
   }
 }
 
-// Sticky Visuals
+// Sticky Visuals — fixed dimensions across all variants for consistency
 .sticky-visual {
   @include glass-strong();
   border-radius: $radius-xl;
   padding: $space-xl;
-  min-height: 300px;
+  width: 100%;
+  max-width: 480px;
+  height: 420px;
+  box-sizing: border-box;
+  overflow: hidden;
   @include flex-center();
 
   &--calendar {

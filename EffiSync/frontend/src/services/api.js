@@ -125,6 +125,15 @@ export const households = {
 
   /** GET /api/households/:id/suggest-time */
   suggestTime: (id) => get(`${API_BASE_URL}/households/${id}/suggest-time`),
+
+  /** GET /api/households/:id/shop */
+  shopList: (id) => get(`${API_BASE_URL}/households/${id}/shop`),
+
+  /** POST /api/households/:id/shop/purchase */
+  shopPurchase: (id, rewardId) => post(`${API_BASE_URL}/households/${id}/shop/purchase`, { rewardId }),
+
+  /** GET /api/households/:id/leaderboard */
+  leaderboard: (id) => get(`${API_BASE_URL}/households/${id}/leaderboard`),
 };
 
 export const ai = {
@@ -133,11 +142,16 @@ export const ai = {
 
   /** POST /api/ai/sync-calendar */
   syncCalendar: () => post(`${API_BASE_URL}/ai/sync-calendar`, {}),
+
+  /** POST /api/ai/suggest-task — returns a fully-formed task suggestion */
+  suggestTask: (prompt) => post(`${API_BASE_URL}/ai/suggest-task`, { prompt }),
 };
 
 export const calendar = {
   /** POST /api/calendar/sync */
   sync: () => post(`${API_BASE_URL}/calendar/sync`, {}),
+  /** GET /api/calendar/upcoming?days=3 */
+  upcoming: (days = 3) => get(`${API_BASE_URL}/calendar/upcoming?days=${days}`),
 };
 
 export const demo = {
