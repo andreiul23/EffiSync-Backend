@@ -24,9 +24,7 @@ The seed is **idempotent** — every demo login resets the data to a clean state
 4. Open **Calendar** → see tasks rendered in their time slots.
 5. Open **Account** → click **Connect Google Calendar** for the OAuth flow (optional).
 
-## 📸 Overview
-<!-- Add placeholders for screenshots/GIFs here -->
-![EffiSync Dashboard Placeholder](https://via.placeholder.com/800x400?text=EffiSync+Dashboard+Screenshot)
+
 
 ## 💡 The "Why"
 Household chores and group scheduling often devolve into chaos, miscommunication, and unfair distribution of work. **EffiSync** solves this using an autonomous **AI Fairness algorithm** that intelligently delegates tasks, manages your calendar, and maintains harmony through a balanced gamified economy. It's not just a tracker; it's your proactive household orchestrator.
